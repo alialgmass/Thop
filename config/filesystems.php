@@ -60,6 +60,24 @@ return [
             'report' => false,
         ],
 
+        // Private store for verification documents (DAT-FR-02, spec Section 12).
+        // No public URL; access is only ever through a signed, time-limited link
+        // issued after a policy check. Backed by a private S3 prefix in
+        // production, the local driver elsewhere.
+        'verification' => [
+            'driver' => env('VERIFICATION_DISK_DRIVER', 'local'),
+            'root' => storage_path('app/private/verification'),
+            'key' => env('AWS_ACCESS_KEY_ID'),
+            'secret' => env('AWS_SECRET_ACCESS_KEY'),
+            'region' => env('AWS_DEFAULT_REGION'),
+            'bucket' => env('AWS_VERIFICATION_BUCKET', env('AWS_BUCKET')),
+            'endpoint' => env('AWS_ENDPOINT'),
+            'use_path_style_endpoint' => env('AWS_USE_PATH_STYLE_ENDPOINT', false),
+            'visibility' => 'private',
+            'throw' => true,
+            'report' => false,
+        ],
+
     ],
 
     /*

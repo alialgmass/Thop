@@ -1,0 +1,11 @@
+{
+    "name": "Verification",
+    "alias": "verification",
+    "description": "Business verification documents and admin review (US-ACC-04/05, US-ADM-01).",
+    "keywords": [],
+    "priority": 0,
+    "providers": [
+        "Modules\\Verification\\Providers\\VerificationServiceProvider"
+    ],
+    "files": []
+}

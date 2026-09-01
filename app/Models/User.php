@@ -6,12 +6,14 @@ use Database\Factories\UserFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\Hidden;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Laravel\Fortify\TwoFactorAuthenticatable;
 use Laravel\Sanctum\HasApiTokens;
 use Modules\Auth\Enums\AccountType;
 use Modules\Auth\Enums\UserStatus;
+use Modules\Businesses\Models\BusinessAccount;
 use Spatie\Permission\Traits\HasRoles;
 
 #[Fillable(['phone', 'email', 'password', 'account_type', 'language', 'status'])]
@@ -51,5 +53,21 @@ class User extends Authenticatable
     public function nextOnboardingStep(): string
     {
         return $this->account_type?->nextOnboardingStep() ?? AccountType::SelectionStep;
+    }
+
+    /**
+     * Whether this account type is expected to hold a business profile.
+     */
+    public function isBusinessAccount(): bool
+    {
+        return $this->account_type?->requiresBusinessProfile() ?? false;
+    }
+
+    /**
+     * @return HasOne<BusinessAccount, $this>
+     */
+    public function businessAccount(): HasOne
+    {
+        return $this->hasOne(BusinessAccount::class);
     }
 }

@@ -1,0 +1,23 @@
+{
+    "name": "thob/businesses",
+    "description": "Businesses module",
+    "authors": [],
+    "extra": {
+        "laravel": {
+            "providers": [],
+            "aliases": {}
+        }
+    },
+    "autoload": {
+        "psr-4": {
+            "Modules\\Businesses\\": "/",
+            "Modules\\Businesses\\Database\\Factories\\": "database/factories/",
+            "Modules\\Businesses\\Database\\Seeders\\": "database/seeders/"
+        }
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "Modules\\Businesses\\Tests\\": "tests/"
+        }
+    }
+}

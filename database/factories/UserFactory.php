@@ -8,6 +8,7 @@ use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
 use Modules\Auth\Enums\AccountType;
 use Modules\Auth\Enums\UserStatus;
+use Spatie\Permission\Models\Role;
 
 /**
  * @extends Factory<User>
@@ -80,6 +81,16 @@ class UserFactory extends Factory
     public function customer(): static
     {
         return $this->ofType(AccountType::Customer);
+    }
+
+    /**
+     * Indicate that the user is a platform administrator.
+     */
+    public function admin(): static
+    {
+        return $this->afterCreating(function (User $user): void {
+            $user->assignRole(Role::findOrCreate('admin', 'web'));
+        });
     }
 
     /**

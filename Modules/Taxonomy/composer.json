@@ -1,0 +1,23 @@
+{
+    "name": "thob/taxonomy",
+    "description": "Taxonomy module",
+    "authors": [],
+    "extra": {
+        "laravel": {
+            "providers": [],
+            "aliases": {}
+        }
+    },
+    "autoload": {
+        "psr-4": {
+            "Modules\\Taxonomy\\": "/",
+            "Modules\\Taxonomy\\Database\\Factories\\": "database/factories/",
+            "Modules\\Taxonomy\\Database\\Seeders\\": "database/seeders/"
+        }
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "Modules\\Taxonomy\\Tests\\": "tests/"
+        }
+    }
+}

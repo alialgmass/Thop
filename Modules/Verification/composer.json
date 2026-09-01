@@ -1,0 +1,23 @@
+{
+    "name": "thob/verification",
+    "description": "Verification module",
+    "authors": [],
+    "extra": {
+        "laravel": {
+            "providers": [],
+            "aliases": {}
+        }
+    },
+    "autoload": {
+        "psr-4": {
+            "Modules\\Verification\\": "/",
+            "Modules\\Verification\\Database\\Factories\\": "database/factories/",
+            "Modules\\Verification\\Database\\Seeders\\": "database/seeders/"
+        }
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "Modules\\Verification\\Tests\\": "tests/"
+        }
+    }
+}
