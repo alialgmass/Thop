@@ -2,9 +2,10 @@
 
 namespace Database\Seeders;
 
-use App\Models\User;
 use Illuminate\Database\Seeder;
-use Modules\Tenancy\Database\Factories\TenantFactory;
+use Modules\Admin\Database\Seeders\RoleSeeder;
+use Modules\Taxonomy\Database\Seeders\TaxonomyDatabaseSeeder;
+use Modules\Verification\Database\Seeders\DocumentTypeSeeder;
 
 class DatabaseSeeder extends Seeder
 {
@@ -13,14 +14,10 @@ class DatabaseSeeder extends Seeder
      */
     public function run(): void
     {
-        $tenant = TenantFactory::new()->create([
-            'name' => 'Demo Store',
-        ]);
-
-        User::factory()->create([
-            'name' => 'Test User',
-            'email' => 'test@example.com',
-            'tenant_id' => $tenant->id,
+        $this->call([
+            RoleSeeder::class,
+            TaxonomyDatabaseSeeder::class,
+            DocumentTypeSeeder::class,
         ]);
     }
 }

@@ -1,0 +1,11 @@
+{
+    "name": "Taxonomy",
+    "alias": "taxonomy",
+    "description": "Controlled reference lists (governorates, fabric types, materials, colors, units).",
+    "keywords": [],
+    "priority": 0,
+    "providers": [
+        "Modules\\Taxonomy\\Providers\\TaxonomyServiceProvider"
+    ],
+    "files": []
+}

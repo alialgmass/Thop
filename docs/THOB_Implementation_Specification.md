@@ -1151,6 +1151,7 @@ Per MNT-NFR-03, automated tests must cover **at minimum**: authentication, entit
 
 Runs on shared hosting from day one (§12 instruction) — no Docker requirement in production, no Kubernetes, no dedicated WebSocket server:
 - PHP + Laravel + MySQL over HTTPS.
+- **Web UI is Filament v5 only** — a single admin/back-office panel at `/admin` (Livewire + Alpine, no separate Node process). There is no server-rendered or Inertia/Vue customer UI; the marketplace app is a separate client that consumes `/api/v1/`. The starter kit's Inertia/Vue scaffold is legacy and slated for removal. Module-owned Filament resources register with the panel via additional `discoverResources` paths.
 - Cron (Laravel Scheduler) drives: subscription expiry checks, daily backups, rollup-table aggregation for analytics, notification digest jobs.
 - Queue worker (`php artisan queue:work`, run via a persistent process or a scheduled short-lived worker if the host disallows long-running processes) handles bulk import, media processing, webhook processing, notification dispatch.
 - External services called over HTTPS: S3, Pusher, OTP/SMS provider, push notification provider, payment provider (R4), maps provider (R3).
@@ -1218,10 +1219,10 @@ None of these are adopted at MVP; each is deferred until the corresponding NFR/S
 6. Initial geographic/governorate focus for supplier onboarding.
 7. Ownership/governance of the fabric-taxonomy reference list.
 8. Whether a transaction commission is planned for R4 alongside subscriptions.
-9. Scope of the "web" client — full customer marketplace vs. seller panel + marketing site only.
+9. ~~Scope of the "web" client — full customer marketplace vs. seller panel + marketing site only.~~ **RESOLVED (2026-09-01):** the only web UI is a **Filament v5 admin/back-office panel** (`/admin`). No customer or seller marketplace web client is built in-repo; that app is a separate `/api/v1/` consumer. Any Inertia/Vue scaffold from the starter kit is legacy and to be removed. See §17.
 10. Whether/when a ratings-and-reviews system for suppliers is introduced.
 
-This specification takes no position on any of the above beyond what the SRS states; each is implemented in a way (taxonomy-driven, admin-editable, key/value entitlements) that avoids hardcoding an answer the product owner hasn't yet given.
+This specification takes no position on the still-open items above beyond what the SRS states; each is implemented in a way (taxonomy-driven, admin-editable, key/value entitlements) that avoids hardcoding an answer the product owner hasn't yet given.
 
 ---
 

@@ -10,7 +10,7 @@ class RedirectIfNotAdmin
 {
     public function handle(Request $request, Closure $next): Response
     {
-        if (! $request->user()?->hasRole('Admin')) {
+        if (! $request->user()?->hasRole('admin')) {
             abort(403, 'This area requires administrator privileges.');
         }
 

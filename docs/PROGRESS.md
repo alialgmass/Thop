@@ -1,6 +1,6 @@
 # THOB — Progress Tracker
 
-آخر تحديث: 2026-09-01 — Phase 0 اكتمل (branch `phase-0-auth`, 45 tests passing)
+آخر تحديث: 2026-09-01 — Phase 0 + Phase 1 اكتملا (branch `phase-0-auth`, 89 tests passing)
 
 ## طريقة الاستخدام
 بعد كل Phase، حدّث الحالة هنا: `⬜ لسه` / `🔄 شغال عليها` / `✅ خلصت + tests عدّت`.
@@ -11,7 +11,7 @@
 | Phase | الوصف | الحالة | ملاحظات |
 |---|---|---|---|
 | 0 | Project Setup + Auth Foundation | ✅ | Spec: issue #1. Module `Auth` (OTP request/verify, register, login/logout, OTP password reset, `me`, account-type). Sanctum bearer tokens. `/api/v1/auth/*`. Faked `OtpSender` seam. 43 module tests + full suite green. Stripped leftover multi-tenant POS scaffold. |
-| 1 | Business Profile + Verification + Audit Log | ⬜ | |
+| 1 | Business Profile + Verification + Audit Log | ✅ | Spec: issue #3; tickets #4–#9. `Taxonomy` (governorates+fabric_types+materials+colors+units, `GET /api/v1/taxonomy/*` public read, seeders; admin CRUD → Phase 9). `Businesses` (`business_accounts` + profile CRUD `/api/v1/businesses`, `BusinessPolicy`, `verified` flag computed from `verification_status`). `Verification` (`document_types`/`verification_requests`/`verification_documents`, private `verification` disk, owner upload/submit/status/signed download, admin queue/approve/reject with mandatory reason, `VerificationPolicy`). `Admin` audit-log foundation (`audit_logs` append-only, `AuditLog::record()`, model blocks update/delete). Events `VerificationSubmitted/Approved/Rejected` fired, no listeners (Phase 8). Published spatie/permission migration + `admin` role seeder (Phase 0 gap). 46 new tests, full suite 89 green. |
 | 2 | Subscriptions & Entitlements | ⬜ | |
 | 3.1 | Catalog — Products الأساسية | ⬜ | |
 | 3.2 | Catalog — Media | ⬜ | |
@@ -42,6 +42,13 @@
 ## Known Issues / Open Decisions مؤجلة
 (سجّل هنا أي Implementation Assumption اتخدت أو أي حاجة محتاجة قرار من صاحب المنتج)
 
+### قرارات محسومة
+- **Open Decision #9 (واجهة الويب) — محسومة 2026-09-01:** واجهة الويب الوحيدة =
+  **Filament v5** admin panel على `/admin`. مفيش marketplace web client في الريبو
+  ده؛ تطبيق المشتري/البائع عميل منفصل بيستهلك `/api/v1/`. الـ Inertia/Vue scaffold
+  بتاع الـ starter kit **legacy** ومقرر يتشال. تفاصيل: `docs/adr/0001-web-ui-is-filament-only.md`،
+  `docs/CLAUDE.md` قسم "واجهة الويب"، السبيك §17 + Open Decision #9.
+
 ### Phase 0
 - **OTP = 6 أرقام**؛ صلاحية 5 دقايق (SEC-NFR-02)؛ قفل بعد 3 محاولات غلط. throttle: 3 طلبات OTP/دقيقة للرقم، 5 تحقق/دقيقة، 5 محاولات login/دقيقة (phone+IP). كلها في `Modules/Auth/config/otp.php` — الأرقام مش محددة في السبيك (Implementation Assumption).
 - **`users.status`**: `pending_type_selection | active | suspended`. اكتمال بروفايل الشركة هيتتبع لاحقًا عبر verification status مش عبر العمود ده.
@@ -52,6 +59,38 @@
 - `POST /api/v1/auth/password/reset` بيلغي كل tokens الـ user (رغم إن السبيك مقالتش) — قرار أمان تحت قاعدة 3 في docs/CLAUDE.md.
 - `GET /api/v1/auth/account-types` بيرجّع الأنواع الأربعة بـ label/description ثنائي اللغة (US-ACC-02). الترجمة بتتبع locale التطبيق؛ ربط `Accept-Language` بالـ API مؤجّل (SetLocale middleware على web بس).
 - `OTP_DRIVER` env يحدد الـ OtpSender (`log` حاليًا) — إضافة مزود SMS = key جديد في `AuthServiceProvider::OTP_DRIVERS`.
+
+### Phase 1 (من السبيك — issue #3)
+- **Taxonomy مسحوبة لقدام** من Phase 3: الجداول + seeders + endpoints للقراءة بس. Admin CRUD (US-ADM-03) لسه Phase 9.
+- **Open Decision #5** (المستندات الإلزامية / هل غير الموثّق ينشر): محلولة بنيويًا بس — `document_types.is_required` عمود، seeded `true` للسجل التجاري + البطاقة الضريبية، قابل للتغيير من غير deploy. مفيش موقف من قفل النشر.
+- **Open Decision #7** (حوكمة taxonomy الأقمشة): seed lists مبدئية مصغّرة ومعلَّمة.
+- **الإشعارات**: events (`VerificationSubmitted/Approved/Rejected`) بتتطلق من غير listeners — Phase 8 بيربط.
+- **`onboarded_by_admin`** عمود على `business_accounts` من دلوقتي (تفادي migration في Phase 9)، assisted onboarding نفسه Phase 9.
+- **audit_logs**: append-only بالبناء (مسار كتابة واحد `AuditLog::record()`)؛ حارس DB-level (trigger/revoked grants) خيار Phase 10.
+- **verification disk**: `Storage::fake()` هو الـ seam في التيستات — مفيش storage contract مخصص. bucket SSE إعداد deployment مش كود. disk `verification` جديد في `config/filesystems.php` (`visibility: private`، `local` driver افتراضيًا، S3 في production عبر `VERIFICATION_DISK_DRIVER`).
+- **تنزيل المستند**: بيعمل stream للملف مباشرة (`Storage::download`) — `temporaryUrl` متاح على S3 بس؛ الـ endpoint نفسه policy-gated فمفيش URL عام.
+- **صيغة `contact_channels`**: مصفوفة من `{type, value}` (JSON عمود، Implementation Assumption — السبيك مقالتش الشكل بالظبط).
+- **تعارض Phase 0**: `spatie/laravel-permission` migration ماكانتش published أصلًا رغم `HasRoles` + Filament Roles resource — published دلوقتي + `admin` role seeder في `Modules/Admin`. و `database/seeders/DatabaseSeeder.php` كان لسه بيشاور على `Modules\Tenancy` المحذوف — اتكتب من جديد (roles + taxonomy + document types).
+- **`business_accounts.user_id`** unique (ملف واحد لكل مستخدم). محاولة تانية → 422 مش 403 (business rule مش authorization).
+- علاقات `verificationRequests()` / `latestVerificationRequest()` على `BusinessAccount` (Businesses بيعرف Verification — coupling مقبول تحت §9.4).
+
+### Phase 1 — code-review fixes (applied)
+- **تنزيل المستند بقى signed + time-limited فعليًا**: `download_url` في الـ resource = `URL::temporarySignedRoute` (TTL من `verification.download_link_ttl_seconds`)، والـ route عليه `signed` middleware + policy check (defense in depth). §12/§15.
+- **رفع الملف**: تحقق `mimetypes:` (MIME مسنيّف) بالإضافة لـ `mimes:` (امتداد) — ملف متغيّر الامتداد بيترفض. SEC-NFR-05.
+- **approve/reject**: حارس حالة — طلب مش `pending` أو مش submitted → 409 (US-ADM-01 "Given a pending request"). العملية كلها في `DB::transaction`.
+- **audit action** = enum `Modules\Admin\Enums\AuditAction` بدل string literals.
+- **taxonomy + document_types**: عمود `is_active` (spec §10.2)، endpoints بتفلتر بيه (`scopeActive`).
+- **authz موحّد**: `App\Http\Concerns\RendersApiErrors` + `ResolvesRequestUser` مشتركين؛ `RendersApiErrors` اتشال من `Modules/Auth` واتنقل لـ `app/`. `VerificationPolicy` بتتحقن (constructor injection) مش `Gate::policy` (أبيليتيها بتمتد عبر 3 models).
+- **dedup**: `BusinessProfileRules` trait للـ Store/Update requests؛ `TaxonomyController` data-driven.
+
+### Phase 1 — Filament admin (verification review فقط، مقدَّم من Phase 9)
+- `Modules/Verification/Filament/Resources/VerificationRequests/*` على بانل `/admin` الموجود. List (فلتر status، badge بعدد الـ pending) + View (infolist: بيانات الشركة + الطلب + المستندات) + هيدر أكشنز Approve / Reject (modal reason مطلوب)، ظاهرين بس طول ما الطلب pending.
+- منطق القرار اتنقل لـ `Modules\Verification\Actions\DecideVerificationRequest` — مشترك بين REST controller والـ Filament page (نفس الـ state guard + audit log + events). استثناء `VerificationNotPendingException` → 409 في الـ API، notification في البانل.
+- تنزيل المستند في البانل: route `admin.verification.documents.download` خلف `web`+`auth`+`RedirectIfNotAdmin` (session مش bearer). الـ API لسه signed URL.
+- `RedirectIfNotAdmin` كان بيتحقق من role `'Admin'` (كابيتال) — اتظبط لـ `'admin'` عشان يطابق `RoleSeeder` وباقي الكود.
+- تسجيل موديول الـ Filament: `discoverResources` تاني في `AdminPanelProvider`.
+- 6 tests (Livewire): non-admin 403، list، approve، reject + reason validation، actions hidden بعد الحسم. الإجمالي 98 green.
+- الباقي من Phase 9 (taxonomy CRUD, plans, featured, liquidity, ban, reports, onboarding) لسه ⬜.
 
 ## Blockers الحالية
 -

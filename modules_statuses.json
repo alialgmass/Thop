@@ -1,3 +1,7 @@
 {
-    "Auth": true
+    "Auth": true,
+    "Taxonomy": true,
+    "Businesses": true,
+    "Verification": true,
+    "Admin": true
 }

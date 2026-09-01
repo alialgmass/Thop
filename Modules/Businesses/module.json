@@ -1,0 +1,11 @@
+{
+    "name": "Businesses",
+    "alias": "businesses",
+    "description": "Business account company profile (US-ACC-03).",
+    "keywords": [],
+    "priority": 0,
+    "providers": [
+        "Modules\\Businesses\\Providers\\BusinessesServiceProvider"
+    ],
+    "files": []
+}
