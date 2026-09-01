@@ -448,6 +448,18 @@ livewire(ListUsers::class)
 
 </laravel-boost-guidelines>
 
+## Web UI — Filament only (overrides the Inertia rules above)
+
+The **only** web UI in this repo is a **Filament v5 admin panel** at `/admin`. Ignore the `=== inertia-laravel/core rules ===` section above for feature work:
+
+- **Do not build new Inertia / Vue / React pages.** The starter kit's `resources/js` + Fortify web auth is legacy, slated for removal.
+- Admin, moderation, taxonomy, plans, dashboards → Filament `Resource` / `Page` / `Widget` (PHP-defined: `Schema`, `Table`, `Filament\Actions\*`). Models: `app/Filament/Resources/*`, `Modules/Verification/Filament/*`.
+- The customer/seller marketplace app is a **separate `/api/v1/` client**; this repo's job ends at the API.
+- Business logic lives in the module (Action / Service / Policy); the Filament page calls it — e.g. `DecideVerificationRequest` is shared by the REST controller and the Filament view page. Don't duplicate logic in the page.
+- Each module registers its Filament classes via an extra `discoverResources` path in `app/Providers/Filament/AdminPanelProvider.php`.
+
+Full rationale: `docs/adr/0001-web-ui-is-filament-only.md`. Details: `docs/CLAUDE.md`.
+
 ## Agent skills
 
 ### Issue tracker

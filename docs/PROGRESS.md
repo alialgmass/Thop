@@ -42,6 +42,13 @@
 ## Known Issues / Open Decisions مؤجلة
 (سجّل هنا أي Implementation Assumption اتخدت أو أي حاجة محتاجة قرار من صاحب المنتج)
 
+### قرارات محسومة
+- **Open Decision #9 (واجهة الويب) — محسومة 2026-09-01:** واجهة الويب الوحيدة =
+  **Filament v5** admin panel على `/admin`. مفيش marketplace web client في الريبو
+  ده؛ تطبيق المشتري/البائع عميل منفصل بيستهلك `/api/v1/`. الـ Inertia/Vue scaffold
+  بتاع الـ starter kit **legacy** ومقرر يتشال. تفاصيل: `docs/adr/0001-web-ui-is-filament-only.md`،
+  `docs/CLAUDE.md` قسم "واجهة الويب"، السبيك §17 + Open Decision #9.
+
 ### Phase 0
 - **OTP = 6 أرقام**؛ صلاحية 5 دقايق (SEC-NFR-02)؛ قفل بعد 3 محاولات غلط. throttle: 3 طلبات OTP/دقيقة للرقم، 5 تحقق/دقيقة، 5 محاولات login/دقيقة (phone+IP). كلها في `Modules/Auth/config/otp.php` — الأرقام مش محددة في السبيك (Implementation Assumption).
 - **`users.status`**: `pending_type_selection | active | suspended`. اكتمال بروفايل الشركة هيتتبع لاحقًا عبر verification status مش عبر العمود ده.

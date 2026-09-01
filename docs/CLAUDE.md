@@ -76,9 +76,33 @@ Http/Requests, Policies, Routes, Resources, Database/Migrations, Tests).
 - Laravel Filesystem + S3 driver (media + verification docs)
 - Pusher PHP SDK (realtime chat)
 - Laravel Notifications (built-in) + queue driver
-- PHPUnit أو Pest للـ tests
+- **Filament v5** — لوحة الأدمن الوحيدة على `/admin` (Livewire + Alpine، PHP-defined UI)
+- PHPUnit للـ tests
 
 راجع `.env.example` للمتغيرات المطلوبة.
+
+## واجهة الويب (Web UI) — Filament فقط
+
+**كل واجهة ويب في المشروع = Filament panel.** الأدمن، المراجعة، إدارة الـ
+taxonomy والخطط، الـ dashboards — كلها Resources / Pages / Widgets على بانل
+`/admin` الموجود (`app/Providers/Filament/AdminPanelProvider.php`).
+
+- **ممنوع تبني صفحات Inertia / Vue / React جديدة.** الـ starter kit جه بـ
+  Inertia + Vue scaffold (`resources/js/pages/*`, Fortify web auth) — ده
+  **legacy** ومقرر يتشال؛ متوسّعش فيه ومتبنيش عليه.
+- تطبيق الـ marketplace نفسه (المشتري/البائع، mobile-first RTL) **عميل
+  منفصل** بيستهلك `/api/v1/` — الـ backend بالنسبة له API-only. مفيش أي
+  التزام بـ Blade/Inertia views للمستخدم النهائي.
+- ده **يُلغي** أي `inertia-laravel` / Vue guidance في `CLAUDE.md` (ملف
+  Laravel Boost في جذر المشروع) — لو تعارض، القاعدة دي تكسب.
+- Filament UI بتتكتب PHP: `Resource` + `Schema` (forms/infolists) +
+  `Table` + `Filament\Actions\*`. راجع `app/Filament/Resources/*` و
+  `Modules/Verification/Filament/*` كنماذج.
+- كل موديول بيسجّل الـ Filament classes بتاعته عبر `discoverResources`
+  إضافي في `AdminPanelProvider` (مش `app/Filament` لوحدها).
+- منطق الأعمال يفضل في الموديول (Action / Service / Policy) والـ Filament
+  page بتناديه — زي `DecideVerificationRequest` اللي بيشاركها الـ REST
+  controller. متكررش المنطق في الـ page.
 
 ## قبل ما تبدأ أي Phase
 
