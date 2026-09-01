@@ -1,6 +1,6 @@
 # THOB — Progress Tracker
 
-آخر تحديث: (حدّثها كل session)
+آخر تحديث: 2026-09-01 — Phase 0 spec published (issue #1)
 
 ## طريقة الاستخدام
 بعد كل Phase، حدّث الحالة هنا: `⬜ لسه` / `🔄 شغال عليها` / `✅ خلصت + tests عدّت`.
@@ -10,7 +10,7 @@
 
 | Phase | الوصف | الحالة | ملاحظات |
 |---|---|---|---|
-| 0 | Project Setup + Auth Foundation | ⬜ | |
+| 0 | Project Setup + Auth Foundation | 🔄 | Spec ready: GitHub issue #1 (label `ready-for-agent`). Seams: HTTP feature tests on `/api/v1/auth/*` + faked `OtpSender`. Auth = Sanctum bearer tokens. |
 | 1 | Business Profile + Verification + Audit Log | ⬜ | |
 | 2 | Subscriptions & Entitlements | ⬜ | |
 | 3.1 | Catalog — Products الأساسية | ⬜ | |
