@@ -1,0 +1,39 @@
+<?php
+
+namespace Modules\Auth\Http\Requests;
+
+use Illuminate\Foundation\Http\FormRequest;
+use Modules\Auth\Support\PhoneNumber;
+
+class LoginRequest extends FormRequest
+{
+    public function authorize(): bool
+    {
+        return true;
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    public function rules(): array
+    {
+        return [
+            'phone' => ['required', 'string'],
+            'password' => ['required', 'string'],
+        ];
+    }
+
+    /**
+     * Canonical phone, or null when the supplied value is not a recognizable
+     * Egyptian mobile number (treated as a failed login, not a validation error).
+     */
+    public function phone(): ?string
+    {
+        return PhoneNumber::normalize($this->input('phone'));
+    }
+
+    public function throttleKey(): string
+    {
+        return 'auth:login:'.($this->phone() ?? 'invalid').'|'.$this->ip();
+    }
+}
