@@ -49,6 +49,9 @@
 - **تعارض سبيك/كود**: الـ starter kit كان multi-tenant POS (Fortify + Inertia + name/email). اتشال بالكامل (web auth kit + tests بتاعته) لصالح schema THOB (phone-first). Fortify + Sanctum فاضلين للـ API. جدول `users` الأساسي اتعدّل مش اتعمله ALTER migrations.
 - **DB**: التطوير/الاختبار على SQLite حاليًا؛ السبيك بيطلب MySQL 8 — التبديل مؤجّل (المايجريشنز متوافقة مع MySQL).
 - `JsonResource::withoutWrapping()` مفعّل عالميًا من `AuthServiceProvider` — مفيش `data` wrapper في ردود الـ API.
+- `POST /api/v1/auth/password/reset` بيلغي كل tokens الـ user (رغم إن السبيك مقالتش) — قرار أمان تحت قاعدة 3 في docs/CLAUDE.md.
+- `GET /api/v1/auth/account-types` بيرجّع الأنواع الأربعة بـ label/description ثنائي اللغة (US-ACC-02). الترجمة بتتبع locale التطبيق؛ ربط `Accept-Language` بالـ API مؤجّل (SetLocale middleware على web بس).
+- `OTP_DRIVER` env يحدد الـ OtpSender (`log` حاليًا) — إضافة مزود SMS = key جديد في `AuthServiceProvider::OTP_DRIVERS`.
 
 ## Blockers الحالية
 -

@@ -5,34 +5,28 @@ namespace Modules\Auth\Http\Controllers;
 use App\Http\Controllers\Controller;
 use App\Models\User;
 use Illuminate\Http\JsonResponse;
-use Laravel\Sanctum\PersonalAccessToken;
+use Modules\Auth\Http\Concerns\RendersApiErrors;
 use Modules\Auth\Http\Requests\PasswordResetRequest;
 
 class PasswordResetController extends Controller
 {
+    use RendersApiErrors;
+
     public function __invoke(PasswordResetRequest $request): JsonResponse
     {
         $phone = $request->verifiedPhone();
-
-        $user = $phone === null
-            ? null
-            : User::query()->where('phone', $phone)->first();
+        $user = $phone === null ? null : User::query()->where('phone', $phone)->first();
 
         if ($user === null) {
-            return response()->json([
-                'message' => __('auth::otp.invalid_handoff'),
-                'errors' => ['reset_token' => [__('auth::otp.invalid_handoff')]],
-            ], 422);
+            return $this->apiError(__('auth::otp.invalid_handoff'), 'reset_token', 422);
         }
 
-        $user->forceFill(['password' => $request->input('password')])->save();
+        $user->forceFill(['password' => $request->string('password')->value()])->save();
 
-        // Revoke every existing session token after a credential change.
-        PersonalAccessToken::query()
-            ->where('tokenable_type', $user->getMorphClass())
-            ->where('tokenable_id', $user->getKey())
-            ->delete();
+        // docs/CLAUDE.md rule 3 (security first): a credential change invalidates
+        // every existing bearer token so a leaked one cannot outlive the reset.
+        $user->tokens()->delete();
 
-        return response()->json(['message' => 'Password updated. Please log in.']);
+        return response()->json(['message' => __('auth::otp.password_updated')]);
     }
 }

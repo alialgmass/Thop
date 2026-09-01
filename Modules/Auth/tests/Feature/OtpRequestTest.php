@@ -69,6 +69,25 @@ class OtpRequestTest extends AuthModuleTestCase
     }
 
     #[Test]
+    public function password_reset_for_an_unknown_phone_is_indistinguishable_from_a_real_send(): void
+    {
+        $known = User::factory()->create(['phone' => '+201012345678']);
+
+        $real = $this->postJson('/api/v1/auth/otp/request', [
+            'phone' => $known->phone,
+            'purpose' => OtpPurpose::PasswordReset->value,
+        ])->assertOk();
+
+        $unknown = $this->postJson('/api/v1/auth/otp/request', [
+            'phone' => '01298765432',
+            'purpose' => OtpPurpose::PasswordReset->value,
+        ])->assertOk();
+
+        $this->assertSame($real->json(), $unknown->json());
+        $this->otp->assertNothingSentTo('+201298765432');
+    }
+
+    #[Test]
     public function it_rejects_a_non_egyptian_phone_number(): void
     {
         $this->postJson('/api/v1/auth/otp/request', [

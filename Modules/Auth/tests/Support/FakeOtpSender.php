@@ -1,6 +1,6 @@
 <?php
 
-namespace Modules\Auth\Support;
+namespace Modules\Auth\Tests\Support;
 
 use Modules\Auth\Contracts\OtpSender;
 use Modules\Auth\Exceptions\OtpDeliveryException;

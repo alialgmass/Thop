@@ -12,7 +12,7 @@ return new class extends Migration
             $table->id();
             $table->string('phone');
             $table->string('code_hash');
-            $table->string('purpose');
+            $table->enum('purpose', ['registration', 'password_reset']);
             $table->timestamp('expires_at');
             $table->unsignedTinyInteger('attempts')->default(0);
             $table->timestamp('consumed_at')->nullable();

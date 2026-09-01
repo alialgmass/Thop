@@ -5,8 +5,8 @@ namespace Modules\Auth\Tests\Feature;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Modules\Auth\Contracts\OtpSender;
 use Modules\Auth\Enums\OtpPurpose;
-use Modules\Auth\Support\FakeOtpSender;
 use Modules\Auth\Support\PhoneNumber;
+use Modules\Auth\Tests\Support\FakeOtpSender;
 use Tests\TestCase;
 
 abstract class AuthModuleTestCase extends TestCase

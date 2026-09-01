@@ -20,7 +20,7 @@ class AccountTypeTest extends AuthModuleTestCase
         ])->assertOk()
             ->assertJsonPath('user.account_type', 'importer')
             ->assertJsonPath('user.status', 'active')
-            ->assertJsonPath('user.next_onboarding_step', 'business_profile');
+            ->assertJsonPath('next_onboarding_step', 'business_profile');
 
         $user->refresh();
         $this->assertSame(AccountType::Importer, $user->account_type);
@@ -35,7 +35,33 @@ class AccountTypeTest extends AuthModuleTestCase
 
         $this->withToken($token)->postJson('/api/v1/auth/account-type', [
             'account_type' => AccountType::Customer->value,
-        ])->assertOk()->assertJsonPath('user.next_onboarding_step', 'none');
+        ])->assertOk()->assertJsonPath('next_onboarding_step', 'none');
+    }
+
+    #[Test]
+    public function the_selectable_account_types_are_listed_with_bilingual_text(): void
+    {
+        $this->getJson('/api/v1/auth/account-types')
+            ->assertOk()
+            ->assertJsonCount(4, 'data')
+            ->assertJsonStructure(['data' => [['value', 'label', 'description', 'requires_business_profile']]])
+            ->assertJsonPath('data.0.value', 'importer');
+    }
+
+    #[Test]
+    public function account_type_labels_switch_with_the_locale(): void
+    {
+        $this->assertSame(
+            'Customer',
+            $this->getJson('/api/v1/auth/account-types')->json('data.3.label'),
+        );
+
+        $this->app->setLocale('ar');
+
+        $this->assertSame(
+            'عميل',
+            $this->getJson('/api/v1/auth/account-types')->json('data.3.label'),
+        );
     }
 
     #[Test]

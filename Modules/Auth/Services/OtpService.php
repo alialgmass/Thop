@@ -1,6 +1,6 @@
 <?php
 
-namespace Modules\Auth\Otp;
+namespace Modules\Auth\Services;
 
 use Illuminate\Support\Facades\Hash;
 use Modules\Auth\Contracts\OtpSender;

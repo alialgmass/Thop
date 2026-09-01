@@ -41,18 +41,8 @@ class OtpRequest extends Model
         return $this->expires_at->isPast();
     }
 
-    public function isConsumed(): bool
-    {
-        return $this->consumed_at !== null;
-    }
-
     public function hasAttemptsLeft(int $max): bool
     {
         return $this->attempts < $max;
-    }
-
-    public function isUsable(int $maxAttempts): bool
-    {
-        return ! $this->isConsumed() && ! $this->isExpired() && $this->hasAttemptsLeft($maxAttempts);
     }
 }

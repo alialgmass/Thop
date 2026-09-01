@@ -17,9 +17,9 @@ return new class extends Migration
             $table->string('email')->nullable()->unique();
             $table->timestamp('email_verified_at')->nullable();
             $table->string('password');
-            $table->string('account_type')->nullable();
-            $table->string('language', 5)->default('ar');
-            $table->string('status')->default('pending_type_selection');
+            $table->enum('account_type', ['importer', 'wholesaler', 'retailer', 'customer'])->nullable();
+            $table->enum('language', ['ar', 'en'])->default('ar');
+            $table->enum('status', ['pending_type_selection', 'active', 'suspended'])->default('pending_type_selection');
             $table->rememberToken();
             $table->timestamps();
         });

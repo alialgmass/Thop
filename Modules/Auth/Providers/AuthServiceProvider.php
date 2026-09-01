@@ -4,7 +4,6 @@ namespace Modules\Auth\Providers;
 
 use Illuminate\Http\Resources\Json\JsonResource;
 use Modules\Auth\Contracts\OtpSender;
-use Modules\Auth\Support\FakeOtpSender;
 use Modules\Auth\Support\LogOtpSender;
 use Nwidart\Modules\Support\ModuleServiceProvider;
 
@@ -13,6 +12,16 @@ class AuthServiceProvider extends ModuleServiceProvider
     protected string $name = 'Auth';
 
     protected string $nameLower = 'auth';
+
+    /**
+     * Concrete {@see OtpSender} per configured driver. Add SMS-provider
+     * adapters here as new keys; the binding stays config-driven.
+     *
+     * @var array<string, class-string<OtpSender>>
+     */
+    private const OTP_DRIVERS = [
+        'log' => LogOtpSender::class,
+    ];
 
     /**
      * Provider classes to register.
@@ -28,9 +37,12 @@ class AuthServiceProvider extends ModuleServiceProvider
         parent::register();
 
         $this->app->singleton(OtpSender::class, function (): OtpSender {
-            return $this->app->environment('testing')
-                ? new FakeOtpSender
-                : new LogOtpSender;
+            $driver = (string) config('auth.otp.driver', 'log');
+
+            $sender = self::OTP_DRIVERS[$driver]
+                ?? throw new \InvalidArgumentException("Unknown OTP driver [{$driver}].");
+
+            return $this->app->make($sender);
         });
     }
 

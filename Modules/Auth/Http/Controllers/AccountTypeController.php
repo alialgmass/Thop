@@ -5,22 +5,31 @@ namespace Modules\Auth\Http\Controllers;
 use App\Http\Controllers\Controller;
 use App\Models\User;
 use Illuminate\Http\JsonResponse;
+use Modules\Auth\Enums\AccountType;
 use Modules\Auth\Enums\UserStatus;
+use Modules\Auth\Http\Concerns\RendersApiErrors;
 use Modules\Auth\Http\Requests\AccountTypeRequest;
 use Modules\Auth\Http\Resources\UserResource;
 
 class AccountTypeController extends Controller
 {
-    public function __invoke(AccountTypeRequest $request): JsonResponse
+    use RendersApiErrors;
+
+    /**
+     * The selectable account types, with bilingual label + description (US-ACC-02).
+     */
+    public function index(): JsonResponse
+    {
+        return response()->json(['data' => AccountType::catalog()]);
+    }
+
+    public function store(AccountTypeRequest $request): JsonResponse
     {
         /** @var User $user */
         $user = $request->user();
 
         if ($user->hasChosenAccountType()) {
-            return response()->json([
-                'message' => __('auth::otp.account_type_already_set'),
-                'errors' => ['account_type' => [__('auth::otp.account_type_already_set')]],
-            ], 409);
+            return $this->apiError(__('auth::otp.account_type_already_set'), 'account_type', 409);
         }
 
         $user->forceFill([
@@ -28,9 +37,12 @@ class AccountTypeController extends Controller
             'status' => UserStatus::Active,
         ])->save();
 
+        $user->refresh();
+
         return response()->json([
-            'message' => 'Account type set.',
-            'user' => new UserResource($user->refresh()),
+            'message' => __('auth::otp.account_type_set'),
+            'user' => new UserResource($user),
+            'next_onboarding_step' => $user->nextOnboardingStep(),
         ]);
     }
 }

@@ -6,43 +6,36 @@ use App\Http\Controllers\Controller;
 use App\Models\User;
 use Illuminate\Http\JsonResponse;
 use Modules\Auth\Enums\UserStatus;
+use Modules\Auth\Http\Concerns\IssuesApiToken;
+use Modules\Auth\Http\Concerns\RendersApiErrors;
 use Modules\Auth\Http\Requests\RegisterRequest;
-use Modules\Auth\Http\Resources\UserResource;
 
 class RegisterController extends Controller
 {
+    use IssuesApiToken;
+    use RendersApiErrors;
+
     public function __invoke(RegisterRequest $request): JsonResponse
     {
         $phone = $request->verifiedPhone();
 
         if ($phone === null) {
-            return response()->json([
-                'message' => __('auth::otp.invalid_handoff'),
-                'errors' => ['registration_token' => [__('auth::otp.invalid_handoff')]],
-            ], 422);
+            return $this->apiError(__('auth::otp.invalid_handoff'), 'registration_token', 422);
         }
 
         if (User::query()->where('phone', $phone)->exists()) {
-            return response()->json([
-                'message' => __('auth::otp.already_registered'),
-                'errors' => ['phone' => [__('auth::otp.already_registered')]],
-            ], 409);
+            return $this->apiError(__('auth::otp.already_registered'), 'phone', 409);
         }
 
         $user = User::query()->create([
             'phone' => $phone,
             'email' => $request->input('email'),
-            'password' => $request->input('password'),
+            'password' => $request->string('password')->value(),
             'language' => $request->language(),
             'status' => UserStatus::PendingTypeSelection,
             'account_type' => null,
         ]);
 
-        $token = $user->createToken('api')->plainTextToken;
-
-        return response()->json([
-            'token' => $token,
-            'user' => new UserResource($user),
-        ], 201);
+        return $this->tokenResponse($user, 201);
     }
 }

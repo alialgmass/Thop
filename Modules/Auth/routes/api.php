@@ -14,10 +14,11 @@ Route::prefix('v1/auth')->name('auth.')->group(function () {
     Route::post('register', RegisterController::class)->name('register');
     Route::post('login', [LoginController::class, 'store'])->name('login');
     Route::post('password/reset', PasswordResetController::class)->name('password.reset');
+    Route::get('account-types', [AccountTypeController::class, 'index'])->name('account-types');
 
     Route::middleware('auth:sanctum')->group(function () {
         Route::get('me', MeController::class)->name('me');
         Route::post('logout', [LoginController::class, 'destroy'])->name('logout');
-        Route::post('account-type', AccountTypeController::class)->name('account-type');
+        Route::post('account-type', [AccountTypeController::class, 'store'])->name('account-type');
     });
 });

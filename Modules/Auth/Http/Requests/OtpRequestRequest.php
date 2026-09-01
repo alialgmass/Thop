@@ -5,11 +5,13 @@ namespace Modules\Auth\Http\Requests;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 use Modules\Auth\Enums\OtpPurpose;
+use Modules\Auth\Http\Requests\Concerns\NormalizesPhone;
 use Modules\Auth\Rules\EgyptianMobile;
-use Modules\Auth\Support\PhoneNumber;
 
 class OtpRequestRequest extends FormRequest
 {
+    use NormalizesPhone;
+
     public function authorize(): bool
     {
         return true;
@@ -24,11 +26,6 @@ class OtpRequestRequest extends FormRequest
             'phone' => ['required', 'string', new EgyptianMobile],
             'purpose' => ['required', Rule::enum(OtpPurpose::class)],
         ];
-    }
-
-    public function phone(): string
-    {
-        return PhoneNumber::normalize($this->input('phone'));
     }
 
     public function purpose(): OtpPurpose

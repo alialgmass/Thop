@@ -44,4 +44,12 @@ class User extends Authenticatable
     {
         return $this->account_type !== null;
     }
+
+    /**
+     * The onboarding step the client should route the user to next.
+     */
+    public function nextOnboardingStep(): string
+    {
+        return $this->account_type?->nextOnboardingStep() ?? AccountType::SelectionStep;
+    }
 }

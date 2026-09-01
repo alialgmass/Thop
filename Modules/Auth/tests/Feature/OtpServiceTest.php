@@ -6,8 +6,8 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 use Modules\Auth\Enums\OtpPurpose;
 use Modules\Auth\Exceptions\InvalidOtpException;
 use Modules\Auth\Models\OtpRequest;
-use Modules\Auth\Otp\OtpService;
-use Modules\Auth\Support\FakeOtpSender;
+use Modules\Auth\Services\OtpService;
+use Modules\Auth\Tests\Support\FakeOtpSender;
 use PHPUnit\Framework\Attributes\Test;
 use Tests\TestCase;
 

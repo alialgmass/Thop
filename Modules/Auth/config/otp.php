@@ -13,6 +13,9 @@ return [
     |
     */
 
+    // Which OtpSender implementation to bind (see AuthServiceProvider::OTP_DRIVERS).
+    'driver' => env('OTP_DRIVER', 'log'),
+
     'length' => 6,
 
     'ttl_seconds' => 300,
