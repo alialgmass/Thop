@@ -76,5 +76,14 @@
 - **authz موحّد**: `App\Http\Concerns\RendersApiErrors` + `ResolvesRequestUser` مشتركين؛ `RendersApiErrors` اتشال من `Modules/Auth` واتنقل لـ `app/`. `VerificationPolicy` بتتحقن (constructor injection) مش `Gate::policy` (أبيليتيها بتمتد عبر 3 models).
 - **dedup**: `BusinessProfileRules` trait للـ Store/Update requests؛ `TaxonomyController` data-driven.
 
+### Phase 1 — Filament admin (verification review فقط، مقدَّم من Phase 9)
+- `Modules/Verification/Filament/Resources/VerificationRequests/*` على بانل `/admin` الموجود. List (فلتر status، badge بعدد الـ pending) + View (infolist: بيانات الشركة + الطلب + المستندات) + هيدر أكشنز Approve / Reject (modal reason مطلوب)، ظاهرين بس طول ما الطلب pending.
+- منطق القرار اتنقل لـ `Modules\Verification\Actions\DecideVerificationRequest` — مشترك بين REST controller والـ Filament page (نفس الـ state guard + audit log + events). استثناء `VerificationNotPendingException` → 409 في الـ API، notification في البانل.
+- تنزيل المستند في البانل: route `admin.verification.documents.download` خلف `web`+`auth`+`RedirectIfNotAdmin` (session مش bearer). الـ API لسه signed URL.
+- `RedirectIfNotAdmin` كان بيتحقق من role `'Admin'` (كابيتال) — اتظبط لـ `'admin'` عشان يطابق `RoleSeeder` وباقي الكود.
+- تسجيل موديول الـ Filament: `discoverResources` تاني في `AdminPanelProvider`.
+- 6 tests (Livewire): non-admin 403، list، approve، reject + reason validation، actions hidden بعد الحسم. الإجمالي 98 green.
+- الباقي من Phase 9 (taxonomy CRUD, plans, featured, liquidity, ban, reports, onboarding) لسه ⬜.
+
 ## Blockers الحالية
 -
