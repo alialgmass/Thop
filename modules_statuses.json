@@ -1,0 +1,13 @@
+{
+    "Shared": true,
+    "Tenancy": true,
+    "Identity": true,
+    "Inventory": true,
+    "Sales": true,
+    "Customers": true,
+    "Restaurant": true,
+    "Reports": true,
+    "Settings": true,
+    "Offline": true,
+    "Billing": true
+}
