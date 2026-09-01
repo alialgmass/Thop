@@ -2,12 +2,14 @@
 
 namespace Modules\Verification\Http\Controllers;
 
+use App\Http\Concerns\RendersApiErrors;
+use App\Http\Concerns\ResolvesRequestUser;
 use App\Http\Controllers\Controller;
-use App\Models\User;
-use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
+use Illuminate\Support\Facades\DB;
+use Modules\Admin\Enums\AuditAction;
 use Modules\Admin\Models\AuditLog;
 use Modules\Businesses\Enums\VerificationStatus;
 use Modules\Verification\Enums\VerificationRequestStatus;
@@ -16,6 +18,7 @@ use Modules\Verification\Events\VerificationRejected;
 use Modules\Verification\Http\Requests\RejectVerificationRequest;
 use Modules\Verification\Http\Resources\VerificationRequestResource;
 use Modules\Verification\Models\VerificationRequest;
+use Modules\Verification\Policies\VerificationPolicy;
 
 /**
  * Admin review of verification requests (US-ADM-01). Every decision is written
@@ -23,11 +26,14 @@ use Modules\Verification\Models\VerificationRequest;
  */
 class AdminVerificationController extends Controller
 {
-    use AuthorizesRequests;
+    use RendersApiErrors;
+    use ResolvesRequestUser;
+
+    public function __construct(private readonly VerificationPolicy $policy) {}
 
     public function queue(Request $request): AnonymousResourceCollection
     {
-        abort_unless($request->user()?->hasRole('admin'), 403);
+        abort_unless($this->policy->viewAny($this->currentUser($request)), 403);
 
         $requests = VerificationRequest::query()
             ->where('status', VerificationRequestStatus::Pending)
@@ -41,57 +47,66 @@ class AdminVerificationController extends Controller
 
     public function approve(Request $request, VerificationRequest $verificationRequest): JsonResponse
     {
-        $this->authorize('review', $verificationRequest);
-
-        $verificationRequest->forceFill([
-            'status' => VerificationRequestStatus::Approved,
-            'reviewed_by' => $request->user()->id,
-            'reviewed_at' => now(),
-            'rejection_reason' => null,
-        ])->save();
-
-        $verificationRequest->businessAccount->forceFill([
-            'verification_status' => VerificationStatus::Verified,
-        ])->save();
-
-        $this->log($request->user(), 'verification.approved', $verificationRequest, []);
-
-        VerificationApproved::dispatch($verificationRequest);
-
-        return (new VerificationRequestResource($verificationRequest->load('documents')))->response();
+        return $this->decide(
+            $request,
+            $verificationRequest,
+            VerificationRequestStatus::Approved,
+            VerificationStatus::Verified,
+            AuditAction::VerificationApproved,
+            null,
+        );
     }
 
     public function reject(RejectVerificationRequest $request, VerificationRequest $verificationRequest): JsonResponse
     {
-        $this->authorize('review', $verificationRequest);
-
-        $reason = (string) $request->string('reason');
-
-        $verificationRequest->forceFill([
-            'status' => VerificationRequestStatus::Rejected,
-            'reviewed_by' => $request->user()->id,
-            'reviewed_at' => now(),
-            'rejection_reason' => $reason,
-        ])->save();
-
-        $verificationRequest->businessAccount->forceFill([
-            'verification_status' => VerificationStatus::Rejected,
-        ])->save();
-
-        $this->log($request->user(), 'verification.rejected', $verificationRequest, ['reason' => $reason]);
-
-        VerificationRejected::dispatch($verificationRequest, $reason);
-
-        return (new VerificationRequestResource($verificationRequest->load('documents')))->response();
+        return $this->decide(
+            $request,
+            $verificationRequest,
+            VerificationRequestStatus::Rejected,
+            VerificationStatus::Rejected,
+            AuditAction::VerificationRejected,
+            (string) $request->string('reason'),
+        );
     }
 
-    /**
-     * @param  array<string, mixed>  $metadata
-     */
-    private function log(User $actor, string $action, VerificationRequest $verificationRequest, array $metadata): void
-    {
-        AuditLog::record($actor, $action, $verificationRequest, array_merge($metadata, [
-            'business_account_id' => $verificationRequest->business_account_id,
-        ]));
+    private function decide(
+        Request $request,
+        VerificationRequest $verificationRequest,
+        VerificationRequestStatus $outcome,
+        VerificationStatus $businessStatus,
+        AuditAction $action,
+        ?string $reason,
+    ): JsonResponse {
+        $admin = $this->currentUser($request);
+        abort_unless($this->policy->review($admin, $verificationRequest), 403);
+
+        // US-ADM-01: only a *pending*, actually-submitted request can be decided.
+        if (! $verificationRequest->isAwaitingReview() || $verificationRequest->submitted_at === null) {
+            return $this->apiError(__('verification::messages.not_pending'), 'status', 409);
+        }
+
+        DB::transaction(function () use ($admin, $verificationRequest, $outcome, $businessStatus, $action, $reason): void {
+            $verificationRequest->forceFill([
+                'status' => $outcome,
+                'reviewed_by' => $admin->id,
+                'reviewed_at' => now(),
+                'rejection_reason' => $reason,
+            ])->save();
+
+            $verificationRequest->businessAccount->forceFill([
+                'verification_status' => $businessStatus,
+            ])->save();
+
+            AuditLog::record($admin, $action, $verificationRequest, array_filter([
+                'business_account_id' => $verificationRequest->business_account_id,
+                'reason' => $reason,
+            ], fn ($value): bool => $value !== null));
+        });
+
+        $reason === null
+            ? VerificationApproved::dispatch($verificationRequest)
+            : VerificationRejected::dispatch($verificationRequest, $reason);
+
+        return (new VerificationRequestResource($verificationRequest->load('documents')))->response();
     }
 }

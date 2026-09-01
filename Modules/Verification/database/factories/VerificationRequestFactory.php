@@ -26,8 +26,8 @@ class VerificationRequestFactory extends Factory
         ];
     }
 
-    public function submitted(): static
+    public function unsubmitted(): static
     {
-        return $this->state(['submitted_at' => now()]);
+        return $this->state(['submitted_at' => null]);
     }
 }

@@ -12,6 +12,7 @@ use Modules\Verification\Database\Factories\DocumentTypeFactory;
  * @property string $name_en
  * @property string $slug
  * @property bool $is_required
+ * @property bool $is_active
  */
 class DocumentType extends Model
 {
@@ -19,6 +20,8 @@ class DocumentType extends Model
     use HasFactory;
 
     protected $guarded = ['id'];
+
+    protected $attributes = ['is_required' => true, 'is_active' => true];
 
     protected static function newFactory(): DocumentTypeFactory
     {
@@ -30,6 +33,6 @@ class DocumentType extends Model
      */
     protected function casts(): array
     {
-        return ['is_required' => 'boolean'];
+        return ['is_required' => 'boolean', 'is_active' => 'boolean'];
     }
 }

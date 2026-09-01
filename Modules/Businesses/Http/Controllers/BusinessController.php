@@ -2,8 +2,9 @@
 
 namespace Modules\Businesses\Http\Controllers;
 
+use App\Http\Concerns\RendersApiErrors;
+use App\Http\Concerns\ResolvesRequestUser;
 use App\Http\Controllers\Controller;
-use App\Models\User;
 use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
 use Illuminate\Http\JsonResponse;
 use Modules\Businesses\Http\Requests\StoreBusinessRequest;
@@ -14,31 +15,25 @@ use Modules\Businesses\Models\BusinessAccount;
 class BusinessController extends Controller
 {
     use AuthorizesRequests;
+    use RendersApiErrors;
+    use ResolvesRequestUser;
 
     public function store(StoreBusinessRequest $request): JsonResponse
     {
-        /** @var User $user */
-        $user = $request->user();
+        $user = $this->currentUser($request);
 
-        if (! $user->isBusinessAccount()) {
-            return response()->json([
-                'message' => __('businesses::profile.customer_forbidden'),
-                'errors' => ['account_type' => [__('businesses::profile.customer_forbidden')]],
-            ], 422);
-        }
-
-        if ($user->businessAccount()->exists()) {
-            return response()->json([
-                'message' => __('businesses::profile.already_exists'),
-                'errors' => ['user_id' => [__('businesses::profile.already_exists')]],
-            ], 422);
+        // BusinessPolicy::create encodes "business-type account with no profile
+        // yet"; surface the specific reason as a 422 business-rule error rather
+        // than a bare 403 so the client can route the user correctly.
+        if (! $user->can('create', BusinessAccount::class)) {
+            return $user->requiresBusinessProfile()
+                ? $this->apiError(__('businesses::profile.already_exists'), 'user_id', 422)
+                : $this->apiError(__('businesses::profile.customer_forbidden'), 'account_type', 422);
         }
 
         $business = $user->businessAccount()->create($request->validated());
 
-        return (new BusinessResource($business))
-            ->response()
-            ->setStatusCode(201);
+        return (new BusinessResource($business))->response()->setStatusCode(201);
     }
 
     public function show(BusinessAccount $business): BusinessResource

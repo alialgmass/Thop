@@ -17,8 +17,11 @@ return [
 
     'accepted_mimes' => ['pdf', 'jpg', 'jpeg', 'png'],
 
+    'accepted_mimetypes' => ['application/pdf', 'image/jpeg', 'image/png'],
+
     'max_file_size_kb' => (int) env('VERIFICATION_MAX_FILE_SIZE_KB', 10240),
 
-    // TTL for the signed download link handed to an owner or admin.
-    'download_link_ttl_seconds' => 300,
+    // TTL for the signed, time-limited download link handed to an owner or admin
+    // (spec Section 12 / Section 15).
+    'download_link_ttl_seconds' => (int) env('VERIFICATION_DOWNLOAD_TTL', 300),
 ];

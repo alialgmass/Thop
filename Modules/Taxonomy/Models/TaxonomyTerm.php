@@ -2,6 +2,7 @@
 
 namespace Modules\Taxonomy\Models;
 
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 
 /**
@@ -13,10 +14,29 @@ use Illuminate\Database\Eloquent\Model;
  * @property string $name_ar
  * @property string $name_en
  * @property string $slug
+ * @property bool $is_active
  */
 abstract class TaxonomyTerm extends Model
 {
     protected $guarded = ['id'];
+
+    protected $attributes = ['is_active' => true];
+
+    /**
+     * @return array<string, string>
+     */
+    protected function casts(): array
+    {
+        return ['is_active' => 'boolean'];
+    }
+
+    /**
+     * @param  Builder<static>  $query
+     */
+    public function scopeActive(Builder $query): void
+    {
+        $query->where('is_active', true);
+    }
 
     /**
      * The bilingual name resolved for the active application locale, with a

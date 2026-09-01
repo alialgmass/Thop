@@ -4,6 +4,7 @@ namespace Modules\Verification\Http\Resources;
 
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
+use Illuminate\Support\Facades\URL;
 use Modules\Verification\Models\VerificationDocument;
 
 /**
@@ -23,11 +24,17 @@ class VerificationDocumentResource extends JsonResource
             'size' => $this->size,
             'original_name' => $this->original_name,
             'uploaded_at' => $this->created_at,
-            // Download is a separate policy-gated endpoint — never a raw path/URL.
-            'download_url' => route('api.verification.documents.download', [
-                'business' => $this->verificationRequest->business_account_id,
-                'document' => $this->id,
-            ]),
+            // A signed, time-limited link — never a raw path or a plain URL
+            // (spec Section 12 / Section 15). The route also re-checks the
+            // policy, so the signature is defence in depth, not the only gate.
+            'download_url' => URL::temporarySignedRoute(
+                'api.verification.documents.download',
+                now()->addSeconds((int) config('verification.download_link_ttl_seconds')),
+                [
+                    'business' => $this->verificationRequest->business_account_id,
+                    'document' => $this->id,
+                ],
+            ),
         ];
     }
 }

@@ -7,6 +7,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\MorphTo;
 use Illuminate\Support\Carbon;
+use Modules\Admin\Enums\AuditAction;
 use RuntimeException;
 
 /**
@@ -57,11 +58,11 @@ class AuditLog extends Model
      *
      * @param  array<string, mixed>  $metadata
      */
-    public static function record(User $actor, string $action, Model $auditable, array $metadata = []): self
+    public static function record(User $actor, AuditAction|string $action, Model $auditable, array $metadata = []): self
     {
         return static::create([
             'actor_id' => $actor->getKey(),
-            'action' => $action,
+            'action' => $action instanceof AuditAction ? $action->value : $action,
             'auditable_type' => $auditable->getMorphClass(),
             'auditable_id' => $auditable->getKey(),
             'metadata' => $metadata === [] ? null : $metadata,

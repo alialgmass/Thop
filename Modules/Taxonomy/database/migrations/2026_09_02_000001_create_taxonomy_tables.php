@@ -19,6 +19,9 @@ return new class extends Migration
                 $table->string('name_ar');
                 $table->string('name_en');
                 $table->string('slug')->unique();
+                // spec Section 10.2: reference tables carry an `active` flag so
+                // admin can retire a term (Phase 9) without deleting history.
+                $table->boolean('is_active')->default(true);
                 $table->timestamps();
             });
         }
@@ -29,6 +32,7 @@ return new class extends Migration
             $table->string('name_en');
             $table->string('slug')->unique();
             $table->string('hex', 7)->nullable();
+            $table->boolean('is_active')->default(true);
             $table->timestamps();
         });
     }

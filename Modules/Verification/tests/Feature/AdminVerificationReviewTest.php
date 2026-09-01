@@ -7,6 +7,7 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\URL;
 use Modules\Businesses\Enums\VerificationStatus;
 use Modules\Businesses\Models\BusinessAccount;
 use Modules\Verification\Enums\VerificationRequestStatus;
@@ -178,8 +179,24 @@ class AdminVerificationReviewTest extends TestCase
         $request = $this->submitRequest();
         $document = $request->documents()->firstOrFail();
 
+        $url = URL::temporarySignedRoute('api.verification.documents.download', now()->addMinutes(5), [
+            'business' => $this->business->id,
+            'document' => $document->id,
+        ]);
+
+        $this->actingAs($this->admin)->get($url)->assertOk();
+    }
+
+    #[Test]
+    public function an_already_decided_request_cannot_be_re_reviewed(): void
+    {
+        $request = $this->submitRequest();
+        $this->actingAs($this->admin)->postJson("/api/v1/admin/verification-requests/{$request->id}/approve")->assertOk();
+
         $this->actingAs($this->admin)
-            ->get("/api/v1/businesses/{$this->business->id}/verification-documents/{$document->id}")
-            ->assertOk();
+            ->postJson("/api/v1/admin/verification-requests/{$request->id}/reject", ['reason' => 'changed my mind'])
+            ->assertStatus(409);
+
+        $this->assertDatabaseCount('audit_logs', 1);
     }
 }

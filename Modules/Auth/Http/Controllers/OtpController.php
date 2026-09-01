@@ -2,12 +2,12 @@
 
 namespace Modules\Auth\Http\Controllers;
 
+use App\Http\Concerns\RendersApiErrors;
 use App\Http\Controllers\Controller;
 use App\Models\User;
 use Illuminate\Http\JsonResponse;
 use Modules\Auth\Enums\OtpPurpose;
 use Modules\Auth\Exceptions\OtpDeliveryException;
-use Modules\Auth\Http\Concerns\RendersApiErrors;
 use Modules\Auth\Http\Concerns\ThrottlesByKey;
 use Modules\Auth\Http\Requests\OtpRequestRequest;
 use Modules\Auth\Http\Requests\OtpVerifyRequest;

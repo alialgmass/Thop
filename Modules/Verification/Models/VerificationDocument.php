@@ -30,10 +30,10 @@ class VerificationDocument extends Model
     }
 
     /**
-     * A time-limited response for an owner or admin to inspect this file. On a
-     * driver that supports it (S3) this redirects to a signed URL; otherwise the
-     * file is streamed directly. There is never a public or predictable URL
-     * (DAT-FR-02, spec Section 12).
+     * Streams the stored file back to an already-authorized owner or admin. The
+     * document itself never has a public or predictable URL — callers reach this
+     * only through the signed, policy-checked download route (DAT-FR-02, spec
+     * Section 12).
      */
     public function downloadResponse(): StreamedResponse
     {

@@ -2,10 +2,10 @@
 
 namespace Modules\Auth\Http\Controllers;
 
+use App\Http\Concerns\RendersApiErrors;
 use App\Http\Controllers\Controller;
 use App\Models\User;
 use Illuminate\Http\JsonResponse;
-use Modules\Auth\Http\Concerns\RendersApiErrors;
 use Modules\Auth\Http\Requests\PasswordResetRequest;
 
 class PasswordResetController extends Controller

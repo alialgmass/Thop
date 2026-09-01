@@ -41,6 +41,11 @@ class VerificationPolicy
             || $document->verificationRequest->businessAccount->user_id === $user->id;
     }
 
+    public function viewAny(User $user): bool
+    {
+        return $user->hasRole('admin');
+    }
+
     public function review(User $user, VerificationRequest $request): bool
     {
         return $user->hasRole('admin');

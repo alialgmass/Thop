@@ -2,13 +2,13 @@
 
 namespace Modules\Auth\Http\Controllers;
 
+use App\Http\Concerns\RendersApiErrors;
 use App\Http\Controllers\Controller;
 use App\Models\User;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Hash;
 use Laravel\Sanctum\PersonalAccessToken;
 use Modules\Auth\Http\Concerns\IssuesApiToken;
-use Modules\Auth\Http\Concerns\RendersApiErrors;
 use Modules\Auth\Http\Concerns\ThrottlesByKey;
 use Modules\Auth\Http\Requests\LoginRequest;
 

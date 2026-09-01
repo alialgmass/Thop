@@ -67,5 +67,14 @@
 - **`business_accounts.user_id`** unique (ملف واحد لكل مستخدم). محاولة تانية → 422 مش 403 (business rule مش authorization).
 - علاقات `verificationRequests()` / `latestVerificationRequest()` على `BusinessAccount` (Businesses بيعرف Verification — coupling مقبول تحت §9.4).
 
+### Phase 1 — code-review fixes (applied)
+- **تنزيل المستند بقى signed + time-limited فعليًا**: `download_url` في الـ resource = `URL::temporarySignedRoute` (TTL من `verification.download_link_ttl_seconds`)، والـ route عليه `signed` middleware + policy check (defense in depth). §12/§15.
+- **رفع الملف**: تحقق `mimetypes:` (MIME مسنيّف) بالإضافة لـ `mimes:` (امتداد) — ملف متغيّر الامتداد بيترفض. SEC-NFR-05.
+- **approve/reject**: حارس حالة — طلب مش `pending` أو مش submitted → 409 (US-ADM-01 "Given a pending request"). العملية كلها في `DB::transaction`.
+- **audit action** = enum `Modules\Admin\Enums\AuditAction` بدل string literals.
+- **taxonomy + document_types**: عمود `is_active` (spec §10.2)، endpoints بتفلتر بيه (`scopeActive`).
+- **authz موحّد**: `App\Http\Concerns\RendersApiErrors` + `ResolvesRequestUser` مشتركين؛ `RendersApiErrors` اتشال من `Modules/Auth` واتنقل لـ `app/`. `VerificationPolicy` بتتحقن (constructor injection) مش `Gate::policy` (أبيليتيها بتمتد عبر 3 models).
+- **dedup**: `BusinessProfileRules` trait للـ Store/Update requests؛ `TaxonomyController` data-driven.
+
 ## Blockers الحالية
 -

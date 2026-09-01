@@ -56,9 +56,10 @@ class User extends Authenticatable
     }
 
     /**
-     * Whether this account type is expected to hold a business profile.
+     * Whether this user's account type must complete a business profile
+     * (importer / wholesaler / retailer — not customer).
      */
-    public function isBusinessAccount(): bool
+    public function requiresBusinessProfile(): bool
     {
         return $this->account_type?->requiresBusinessProfile() ?? false;
     }

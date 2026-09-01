@@ -43,6 +43,20 @@ class VerificationUploadTest extends TestCase
         return UploadedFile::fake()->create('commercial-register.pdf', 200, 'application/pdf');
     }
 
+    /**
+     * Upload one document and return its resource payload (incl. the signed
+     * `download_url`).
+     *
+     * @return array<string, mixed>
+     */
+    private function upload(?User $as = null): array
+    {
+        return $this->actingAs($as ?? $this->owner)->postJson(
+            "/api/v1/businesses/{$this->business->id}/verification-documents",
+            ['document_type_id' => $this->type->id, 'file' => $this->pdf()],
+        )->assertCreated()->json();
+    }
+
     #[Test]
     public function an_owner_uploads_a_valid_document_and_it_lands_on_the_private_disk(): void
     {
@@ -73,6 +87,20 @@ class VerificationUploadTest extends TestCase
 
         $this->assertDatabaseCount('verification_documents', 0);
         $this->assertEmpty(Storage::disk('verification')->allFiles());
+    }
+
+    #[Test]
+    public function a_file_whose_content_type_does_not_match_its_extension_is_rejected(): void
+    {
+        $this->actingAs($this->owner)
+            ->postJson("/api/v1/businesses/{$this->business->id}/verification-documents", [
+                'document_type_id' => $this->type->id,
+                'file' => UploadedFile::fake()->create('commercial-register.pdf', 100, 'application/x-msdownload'),
+            ])
+            ->assertStatus(422)
+            ->assertJsonValidationErrorFor('file');
+
+        $this->assertDatabaseCount('verification_documents', 0);
     }
 
     #[Test]
@@ -134,17 +162,25 @@ class VerificationUploadTest extends TestCase
     }
 
     #[Test]
+    public function the_download_link_is_signed_and_time_limited(): void
+    {
+        $payload = $this->upload();
+
+        $this->assertStringContainsString('signature=', $payload['download_url']);
+
+        // The unsigned route is rejected outright.
+        $this->actingAs($this->owner)
+            ->get("/api/v1/businesses/{$this->business->id}/verification-documents/{$payload['id']}")
+            ->assertForbidden();
+    }
+
+    #[Test]
     public function an_owner_can_download_their_own_document(): void
     {
-        $this->actingAs($this->owner)->postJson(
-            "/api/v1/businesses/{$this->business->id}/verification-documents",
-            ['document_type_id' => $this->type->id, 'file' => $this->pdf()],
-        )->assertCreated();
-
-        $document = VerificationDocument::first();
+        $payload = $this->upload();
 
         $this->actingAs($this->owner)
-            ->get("/api/v1/businesses/{$this->business->id}/verification-documents/{$document->id}")
+            ->get($payload['download_url'])
             ->assertOk()
             ->assertDownload('commercial-register.pdf');
     }
@@ -152,11 +188,7 @@ class VerificationUploadTest extends TestCase
     #[Test]
     public function another_business_cannot_touch_this_business_documents_or_status(): void
     {
-        $this->actingAs($this->owner)->postJson(
-            "/api/v1/businesses/{$this->business->id}/verification-documents",
-            ['document_type_id' => $this->type->id, 'file' => $this->pdf()],
-        )->assertCreated();
-        $document = VerificationDocument::first();
+        $payload = $this->upload();
 
         $intruder = User::factory()->wholesaler()->create();
 
@@ -164,8 +196,9 @@ class VerificationUploadTest extends TestCase
             ->getJson("/api/v1/businesses/{$this->business->id}/verification-status")
             ->assertForbidden();
 
+        // Even holding the signed link, the policy check still denies a stranger.
         $this->actingAs($intruder)
-            ->get("/api/v1/businesses/{$this->business->id}/verification-documents/{$document->id}")
+            ->get($payload['download_url'])
             ->assertForbidden();
 
         $this->actingAs($intruder)

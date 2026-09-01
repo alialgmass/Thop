@@ -6,8 +6,9 @@ use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
 /**
- * Validates a single verification document (MIME + size) BEFORE it is written
- * anywhere (SEC-NFR-05).
+ * Validates a single verification document BEFORE it is written anywhere
+ * (SEC-NFR-05). The file is checked both by extension (`mimes`) and by sniffed
+ * media type (`mimetypes`) so a renamed executable cannot slip through.
  */
 class UploadVerificationDocumentRequest extends FormRequest
 {
@@ -22,12 +23,17 @@ class UploadVerificationDocumentRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'document_type_id' => ['required', 'integer', Rule::exists('document_types', 'id')],
+            'document_type_id' => [
+                'required',
+                'integer',
+                Rule::exists('document_types', 'id')->where('is_active', true),
+            ],
             'file' => [
                 'required',
                 'file',
-                'mimes:'.implode(',', config('verification.accepted_mimes', ['pdf', 'jpg', 'jpeg', 'png'])),
-                'max:'.(int) config('verification.max_file_size_kb', 10240),
+                'mimes:'.implode(',', config('verification.accepted_mimes')),
+                'mimetypes:'.implode(',', config('verification.accepted_mimetypes')),
+                'max:'.(int) config('verification.max_file_size_kb'),
             ],
         ];
     }

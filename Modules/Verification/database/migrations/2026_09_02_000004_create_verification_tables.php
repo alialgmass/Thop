@@ -20,6 +20,7 @@ return new class extends Migration
             $table->string('name_en');
             $table->string('slug')->unique();
             $table->boolean('is_required')->default(true);
+            $table->boolean('is_active')->default(true);
             $table->timestamps();
         });
 

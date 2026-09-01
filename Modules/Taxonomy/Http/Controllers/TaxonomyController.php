@@ -9,6 +9,7 @@ use Modules\Taxonomy\Models\Color;
 use Modules\Taxonomy\Models\FabricType;
 use Modules\Taxonomy\Models\Governorate;
 use Modules\Taxonomy\Models\Material;
+use Modules\Taxonomy\Models\TaxonomyTerm;
 use Modules\Taxonomy\Models\Unit;
 
 /**
@@ -19,26 +20,36 @@ class TaxonomyController extends Controller
 {
     public function governorates(): AnonymousResourceCollection
     {
-        return TaxonomyTermResource::collection(Governorate::query()->orderBy('name_en')->get());
+        return $this->list(Governorate::class);
     }
 
     public function fabricTypes(): AnonymousResourceCollection
     {
-        return TaxonomyTermResource::collection(FabricType::query()->orderBy('name_en')->get());
+        return $this->list(FabricType::class);
     }
 
     public function materials(): AnonymousResourceCollection
     {
-        return TaxonomyTermResource::collection(Material::query()->orderBy('name_en')->get());
+        return $this->list(Material::class);
     }
 
     public function colors(): AnonymousResourceCollection
     {
-        return TaxonomyTermResource::collection(Color::query()->orderBy('name_en')->get());
+        return $this->list(Color::class);
     }
 
     public function units(): AnonymousResourceCollection
     {
-        return TaxonomyTermResource::collection(Unit::query()->orderBy('name_en')->get());
+        return $this->list(Unit::class);
+    }
+
+    /**
+     * @param  class-string<TaxonomyTerm>  $term
+     */
+    private function list(string $term): AnonymousResourceCollection
+    {
+        return TaxonomyTermResource::collection(
+            $term::query()->active()->orderBy('name_en')->get(),
+        );
     }
 }

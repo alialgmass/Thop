@@ -26,7 +26,7 @@ class BusinessPolicy
      */
     public function create(User $user): bool
     {
-        return $user->isBusinessAccount() && $user->businessAccount()->doesntExist();
+        return $user->requiresBusinessProfile() && $user->businessAccount()->doesntExist();
     }
 
     public function view(User $user, BusinessAccount $business): bool
