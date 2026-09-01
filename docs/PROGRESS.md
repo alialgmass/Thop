@@ -1,6 +1,6 @@
 # THOB — Progress Tracker
 
-آخر تحديث: 2026-09-01 — Phase 0 spec published (issue #1)
+آخر تحديث: 2026-09-01 — Phase 0 اكتمل (branch `phase-0-auth`, 45 tests passing)
 
 ## طريقة الاستخدام
 بعد كل Phase، حدّث الحالة هنا: `⬜ لسه` / `🔄 شغال عليها` / `✅ خلصت + tests عدّت`.
@@ -10,7 +10,7 @@
 
 | Phase | الوصف | الحالة | ملاحظات |
 |---|---|---|---|
-| 0 | Project Setup + Auth Foundation | 🔄 | Spec ready: GitHub issue #1 (label `ready-for-agent`). Seams: HTTP feature tests on `/api/v1/auth/*` + faked `OtpSender`. Auth = Sanctum bearer tokens. |
+| 0 | Project Setup + Auth Foundation | ✅ | Spec: issue #1. Module `Auth` (OTP request/verify, register, login/logout, OTP password reset, `me`, account-type). Sanctum bearer tokens. `/api/v1/auth/*`. Faked `OtpSender` seam. 43 module tests + full suite green. Stripped leftover multi-tenant POS scaffold. |
 | 1 | Business Profile + Verification + Audit Log | ⬜ | |
 | 2 | Subscriptions & Entitlements | ⬜ | |
 | 3.1 | Catalog — Products الأساسية | ⬜ | |
@@ -42,7 +42,13 @@
 ## Known Issues / Open Decisions مؤجلة
 (سجّل هنا أي Implementation Assumption اتخدت أو أي حاجة محتاجة قرار من صاحب المنتج)
 
--
+### Phase 0
+- **OTP = 6 أرقام**؛ صلاحية 5 دقايق (SEC-NFR-02)؛ قفل بعد 3 محاولات غلط. throttle: 3 طلبات OTP/دقيقة للرقم، 5 تحقق/دقيقة، 5 محاولات login/دقيقة (phone+IP). كلها في `Modules/Auth/config/otp.php` — الأرقام مش محددة في السبيك (Implementation Assumption).
+- **`users.status`**: `pending_type_selection | active | suspended`. اكتمال بروفايل الشركة هيتتبع لاحقًا عبر verification status مش عبر العمود ده.
+- **صيغ الهاتف المقبولة**: `01XXXXXXXXX` / `201XXXXXXXXX` / `+201XXXXXXXXX` (010/011/012/015) → تتخزن كـ `+20…`.
+- **تعارض سبيك/كود**: الـ starter kit كان multi-tenant POS (Fortify + Inertia + name/email). اتشال بالكامل (web auth kit + tests بتاعته) لصالح schema THOB (phone-first). Fortify + Sanctum فاضلين للـ API. جدول `users` الأساسي اتعدّل مش اتعمله ALTER migrations.
+- **DB**: التطوير/الاختبار على SQLite حاليًا؛ السبيك بيطلب MySQL 8 — التبديل مؤجّل (المايجريشنز متوافقة مع MySQL).
+- `JsonResource::withoutWrapping()` مفعّل عالميًا من `AuthServiceProvider` — مفيش `data` wrapper في ردود الـ API.
 
 ## Blockers الحالية
 -
