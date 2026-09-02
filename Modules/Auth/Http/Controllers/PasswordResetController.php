@@ -2,15 +2,16 @@
 
 namespace Modules\Auth\Http\Controllers;
 
-use App\Http\Concerns\RendersApiErrors;
-use App\Http\Controllers\Controller;
 use App\Models\User;
 use Illuminate\Http\JsonResponse;
 use Modules\Auth\Http\Requests\PasswordResetRequest;
+use Modules\Core\Exceptions\ApiException\ExceptionResponse;
+use Modules\Core\Http\Controllers\Controller;
+use Modules\Core\Support\Api\ApiResponse;
 
 class PasswordResetController extends Controller
 {
-    use RendersApiErrors;
+    use ApiResponse;
 
     public function __invoke(PasswordResetRequest $request): JsonResponse
     {
@@ -18,7 +19,9 @@ class PasswordResetController extends Controller
         $user = $phone === null ? null : User::query()->where('phone', $phone)->first();
 
         if ($user === null) {
-            return $this->apiError(__('auth::otp.invalid_handoff'), 'reset_token', 422);
+            throw ExceptionResponse::instance(__('auth::otp.invalid_handoff'), 422)
+                ->setCustomCode(4224)
+                ->setCustomBody(['reset_token' => [__('auth::otp.invalid_handoff')]]);
         }
 
         $user->forceFill(['password' => $request->string('password')->value()])->save();
@@ -27,6 +30,9 @@ class PasswordResetController extends Controller
         // every existing bearer token so a leaked one cannot outlive the reset.
         $user->tokens()->delete();
 
-        return response()->json(['message' => __('auth::otp.password_updated')]);
+        return $this
+            ->apiMessage(__('auth::otp.password_updated'))
+            ->apiBody([])
+            ->apiResponse();
     }
 }

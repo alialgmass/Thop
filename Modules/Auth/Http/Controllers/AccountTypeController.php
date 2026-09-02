@@ -2,25 +2,28 @@
 
 namespace Modules\Auth\Http\Controllers;
 
-use App\Http\Concerns\RendersApiErrors;
-use App\Http\Controllers\Controller;
 use App\Models\User;
 use Illuminate\Http\JsonResponse;
 use Modules\Auth\Enums\AccountType;
 use Modules\Auth\Enums\UserStatus;
 use Modules\Auth\Http\Requests\AccountTypeRequest;
 use Modules\Auth\Http\Resources\UserResource;
+use Modules\Core\Exceptions\ApiException\ExceptionResponse;
+use Modules\Core\Http\Controllers\Controller;
+use Modules\Core\Support\Api\ApiResponse;
 
 class AccountTypeController extends Controller
 {
-    use RendersApiErrors;
+    use ApiResponse;
 
     /**
      * The selectable account types, with bilingual label + description (US-ACC-02).
      */
     public function index(): JsonResponse
     {
-        return response()->json(['data' => AccountType::catalog()]);
+        return $this
+            ->apiBody(['account_types' => AccountType::catalog()])
+            ->apiResponse();
     }
 
     public function store(AccountTypeRequest $request): JsonResponse
@@ -29,7 +32,9 @@ class AccountTypeController extends Controller
         $user = $request->user();
 
         if ($user->hasChosenAccountType()) {
-            return $this->apiError(__('auth::otp.account_type_already_set'), 'account_type', 409);
+            throw ExceptionResponse::instance(__('auth::otp.account_type_already_set'), 409)
+                ->setCustomCode(4092)
+                ->setCustomBody(['account_type' => [__('auth::otp.account_type_already_set')]]);
         }
 
         $user->forceFill([
@@ -39,10 +44,12 @@ class AccountTypeController extends Controller
 
         $user->refresh();
 
-        return response()->json([
-            'message' => __('auth::otp.account_type_set'),
-            'user' => new UserResource($user),
-            'next_onboarding_step' => $user->nextOnboardingStep(),
-        ]);
+        return $this
+            ->apiMessage(__('auth::otp.account_type_set'))
+            ->apiBody([
+                'user' => new UserResource($user),
+                'next_onboarding_step' => $user->nextOnboardingStep(),
+            ])
+            ->apiResponse();
     }
 }

@@ -4,6 +4,8 @@ namespace Modules\Taxonomy\Models;
 
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
+use Modules\Core\Support\Traits\HasCreatedByColumn;
+use Modules\Core\Support\Traits\HasUpdatedByColumn;
 
 /**
  * Base for the controlled reference lists (governorates, fabric types,
@@ -18,6 +20,9 @@ use Illuminate\Database\Eloquent\Model;
  */
 abstract class TaxonomyTerm extends Model
 {
+    use HasCreatedByColumn;
+    use HasUpdatedByColumn;
+
     protected $guarded = ['id'];
 
     protected $attributes = ['is_active' => true];

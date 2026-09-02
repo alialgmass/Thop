@@ -5,6 +5,8 @@ namespace Modules\Verification\Models;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Support\Facades\Storage;
+use Modules\Core\Support\Traits\HasCreatedByColumn;
+use Modules\Core\Support\Traits\HasUpdatedByColumn;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 
 /**
@@ -19,6 +21,9 @@ use Symfony\Component\HttpFoundation\StreamedResponse;
  */
 class VerificationDocument extends Model
 {
+    use HasCreatedByColumn;
+    use HasUpdatedByColumn;
+
     protected $guarded = ['id'];
 
     /**

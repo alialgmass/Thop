@@ -2,20 +2,15 @@
 
 namespace Modules\Auth\Http\Requests;
 
-use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 use Modules\Auth\Enums\OtpPurpose;
 use Modules\Auth\Http\Requests\Concerns\NormalizesPhone;
 use Modules\Auth\Rules\EgyptianMobile;
+use Modules\Core\Http\Requests\BaseRequest;
 
-class OtpVerifyRequest extends FormRequest
+class OtpVerifyRequest extends BaseRequest
 {
     use NormalizesPhone;
-
-    public function authorize(): bool
-    {
-        return true;
-    }
 
     /**
      * @return array<string, mixed>

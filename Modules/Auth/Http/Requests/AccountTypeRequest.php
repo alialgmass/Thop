@@ -2,17 +2,12 @@
 
 namespace Modules\Auth\Http\Requests;
 
-use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 use Modules\Auth\Enums\AccountType;
+use Modules\Core\Http\Requests\BaseRequest;
 
-class AccountTypeRequest extends FormRequest
+class AccountTypeRequest extends BaseRequest
 {
-    public function authorize(): bool
-    {
-        return true;
-    }
-
     /**
      * @return array<string, mixed>
      */

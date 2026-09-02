@@ -15,13 +15,17 @@
    (استخدم فقط الفولدرات المذكورة في 9.2 — متعملش abstractions زيادة).
 2. Module: Auth
    - Migration + Model لـ users (الحقول: phone unique, email nullable unique, 
-     password_hash, account_type enum, language, status)
+      password_hash, account_type enum, language, status)
+   - Migration + Model لـ otp_requests (الحقول: phone, code_hash, expires_at, 
+      attempts)
    - OTP request/verify (US-ACC-01): endpoint لإرسال OTP، تخزينه hashed، 
-     expiry 5 دقايق، rate limiting على المحاولات (لا تسجل الـ OTP نفسه في اللوج أبدًا)
+      expiry 5 دقايق، rate limiting بعد 3 محاولات غلط 
+      (لا تسجل الـ OTP نفسه في اللوج أبدًا)
    - Register + Login + Logout + session (US-ACC-02, US-ACC-07)
    - Account-type selection endpoint (importer/wholesaler/retailer/customer)
-3. اكتب Feature Tests تغطي: OTP expiry، rate limit بعد محاولات غلط، 
-   تسجيل رقم مكرر، اختيار نوع الحساب.
+3. اكتب Feature Tests تغطي: OTP expiry، rate limit بعد 3 محاولات غلط، 
+   تسجيل رقم مكرر، اختيار نوع الحساب، مفيش أي OTP plaintext في اللوجز 
+   (SEC-NFR-02).
 4. متلمسش أي Business logic تانية غير المذكورة هنا — باقي الموديولز هتيجي في Phases تانية.
 
 في الآخر اديني ملخص بالملفات اللي اتعملت والـ tests اللي عدّت.
@@ -35,14 +39,17 @@
 اقرأ THOB_Implementation_Specification.md وركز على:
 - Section 4.1: US-ACC-03, US-ACC-04, US-ACC-05
 - Section 4.10: US-ADM-01, US-ADM-09 (audit log)
-- Section 10.1 (business_accounts, verification_requests, verification_documents, audit_logs)
+- Section 10.1 (business_accounts, verification_requests, verification_documents)
+- Section 10.8 (audit_logs)
 - Section 12 (S3 Media Architecture) — خاص بتخزين مستندات التوثيق PRIVATE
 - Section 15 (Security Architecture) بند verification documents
 - Section 8 (Authorization Matrix) لصلاحيات كل Actor على Business Profile / Verification
 
 المطلوب:
 1. Module: Businesses — business_accounts table + CRUD لملف الشركة (US-ACC-03)
-   ملحوظة: governorate_id هو Implementation Assumption (مرجع من taxonomy) — نفّذه كذلك.
+    ملحوظة: governorate_id هو Implementation Assumption (مرجع من taxonomy) — نفّذه كذلك.
+    ملحوظة تانية: onboarded_by_admin (bool) لازم يكون في الـ migration من دلوقتي 
+    (US-ADM-10 — assisted onboarding).
 2. Module: Verification
    - رفع مستندات التوثيق (US-ACC-04): validation للـ MIME/size، تخزين على 
      S3 disk خاص PRIVATE، مفيش URL عام يتم تخمينه أبدًا.

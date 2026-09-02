@@ -70,11 +70,11 @@ class AuditLog extends Model
     }
 
     /**
-     * @return BelongsTo<User, $this>
+     * @return BelongsTo<Admin, $this>
      */
     public function actor(): BelongsTo
     {
-        return $this->belongsTo(User::class, 'actor_id');
+        return $this->belongsTo(Admin::class, 'actor_id');
     }
 
     /**

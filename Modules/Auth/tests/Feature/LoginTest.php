@@ -18,7 +18,7 @@ class LoginTest extends AuthModuleTestCase
         $this->postJson('/api/v1/auth/login', [
             'phone' => '01012345678',
             'password' => 'Str0ng-Pass!',
-        ])->assertOk()->assertJsonStructure(['token', 'user' => ['id', 'phone']]);
+        ])->assertOk()->assertJsonStructure(['body' => ['token', 'user' => ['id', 'phone']]]);
     }
 
     #[Test]

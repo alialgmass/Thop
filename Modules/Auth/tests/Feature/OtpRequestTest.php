@@ -93,7 +93,7 @@ class OtpRequestTest extends AuthModuleTestCase
         $this->postJson('/api/v1/auth/otp/request', [
             'phone' => '+1 555 0100',
             'purpose' => OtpPurpose::Registration->value,
-        ])->assertStatus(422)->assertJsonValidationErrorFor('phone');
+        ])->assertStatus(400)->assertJsonStructure(['body' => ['phone']]);
     }
 
     #[Test]

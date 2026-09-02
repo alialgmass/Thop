@@ -27,7 +27,7 @@ class OtpVerifyTest extends AuthModuleTestCase
             'phone' => '01012345678',
             'purpose' => OtpPurpose::Registration->value,
             'code' => $code,
-        ])->assertOk()->assertJsonStructure(['message', 'registration_token']);
+        ])->assertOk()->assertJsonStructure(['message', 'body' => ['registration_token']]);
 
         $this->assertNotNull(OtpRequest::query()->firstOrFail()->consumed_at);
     }

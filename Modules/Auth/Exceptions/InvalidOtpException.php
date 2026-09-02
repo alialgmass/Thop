@@ -2,46 +2,39 @@
 
 namespace Modules\Auth\Exceptions;
 
-use Illuminate\Support\Facades\Response;
-use RuntimeException;
-use Symfony\Component\HttpFoundation\Response as SymfonyResponse;
+use Modules\Core\Exceptions\ApiException\ExceptionResponse;
 
 /**
  * Raised when an OTP cannot be verified. Renders as a 422 with a single,
  * localized message so the client can tell the user what went wrong.
  */
-class InvalidOtpException extends RuntimeException
+class InvalidOtpException extends ExceptionResponse
 {
-    private function __construct(public readonly string $reason, string $message)
+    public static function noActiveRequest(): static
     {
-        parent::__construct($message);
+        return static::instance(__('auth::otp.no_active_request'), 422)
+            ->setCustomCode(4221)
+            ->setCustomBody(['code' => [__('auth::otp.no_active_request')]]);
     }
 
-    public static function noActiveRequest(): self
+    public static function expired(): static
     {
-        return new self('no_active_request', __('auth::otp.no_active_request'));
+        return static::instance(__('auth::otp.expired'), 422)
+            ->setCustomCode(4221)
+            ->setCustomBody(['code' => [__('auth::otp.expired')]]);
     }
 
-    public static function expired(): self
+    public static function locked(): static
     {
-        return new self('expired', __('auth::otp.expired'));
+        return static::instance(__('auth::otp.locked'), 422)
+            ->setCustomCode(4221)
+            ->setCustomBody(['code' => [__('auth::otp.locked')]]);
     }
 
-    public static function locked(): self
+    public static function mismatch(): static
     {
-        return new self('locked', __('auth::otp.locked'));
-    }
-
-    public static function mismatch(): self
-    {
-        return new self('mismatch', __('auth::otp.mismatch'));
-    }
-
-    public function render(): SymfonyResponse
-    {
-        return Response::json([
-            'message' => $this->getMessage(),
-            'errors' => ['code' => [$this->getMessage()]],
-        ], 422);
+        return static::instance(__('auth::otp.mismatch'), 422)
+            ->setCustomCode(4221)
+            ->setCustomBody(['code' => [__('auth::otp.mismatch')]]);
     }
 }

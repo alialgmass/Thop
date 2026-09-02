@@ -19,10 +19,10 @@ class TaxonomyEndpointsTest extends TestCase
 
         $response = $this->getJson('/api/v1/taxonomy/governorates')
             ->assertOk()
-            ->assertJsonCount(27)
-            ->assertJsonStructure([['id', 'slug', 'name', 'name_ar', 'name_en']]);
+            ->assertJsonCount(27, 'body.governorates')
+            ->assertJsonStructure(['body' => ['governorates' => [['id', 'slug', 'name', 'name_ar', 'name_en']]]]);
 
-        $this->assertcontains('Cairo', array_column($response->json(), 'name_en'));
+        $this->assertcontains('Cairo', array_column($response->json('body.governorates'), 'name_en'));
     }
 
     #[Test]
@@ -31,7 +31,8 @@ class TaxonomyEndpointsTest extends TestCase
         $this->seed(TaxonomyDatabaseSeeder::class);
 
         foreach (['governorates', 'fabric-types', 'materials', 'colors', 'units'] as $list) {
-            $rows = $this->getJson("/api/v1/taxonomy/{$list}")->assertOk()->json();
+            $key = $list === 'fabric-types' ? 'fabric_types' : $list;
+            $rows = $this->getJson("/api/v1/taxonomy/{$list}")->assertOk()->json("body.{$key}");
 
             $this->assertNotEmpty($rows, "{$list} should not be empty");
             $this->assertArrayHasKey('name_ar', $rows[0]);
@@ -58,7 +59,7 @@ class TaxonomyEndpointsTest extends TestCase
 
         $this->getJson('/api/v1/taxonomy/governorates')
             ->assertOk()
-            ->assertJsonPath('0.name', 'القاهرة');
+            ->assertJsonPath('body.governorates.0.name', 'القاهرة');
     }
 
     #[Test]

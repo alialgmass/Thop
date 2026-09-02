@@ -2,8 +2,6 @@
 
 namespace Modules\Auth\Http\Controllers;
 
-use App\Http\Concerns\RendersApiErrors;
-use App\Http\Controllers\Controller;
 use App\Models\User;
 use Illuminate\Http\JsonResponse;
 use Modules\Auth\Enums\OtpPurpose;
@@ -13,10 +11,13 @@ use Modules\Auth\Http\Requests\OtpRequestRequest;
 use Modules\Auth\Http\Requests\OtpVerifyRequest;
 use Modules\Auth\Services\OtpService;
 use Modules\Auth\Support\HandoffToken;
+use Modules\Core\Exceptions\ApiException\ExceptionResponse;
+use Modules\Core\Http\Controllers\Controller;
+use Modules\Core\Support\Api\ApiResponse;
 
 class OtpController extends Controller
 {
-    use RendersApiErrors;
+    use ApiResponse;
     use ThrottlesByKey;
 
     public function __construct(private readonly OtpService $otp) {}
@@ -31,22 +32,30 @@ class OtpController extends Controller
         $userExists = User::query()->where('phone', $phone)->exists();
 
         if ($purpose === OtpPurpose::Registration && $userExists) {
-            return $this->apiError(__('auth::otp.already_registered'), 'phone', 409);
+            throw ExceptionResponse::instance(__('auth::otp.already_registered'), 409)
+                ->setCustomCode(4091)
+                ->setCustomBody(['phone' => [__('auth::otp.already_registered')]]);
         }
 
         // Password reset for an unknown number: respond exactly as a real send
         // would, so registered numbers cannot be enumerated (spec Section 11).
         if ($purpose === OtpPurpose::PasswordReset && ! $userExists) {
-            return response()->json(['message' => __('auth::otp.code_sent')]);
+            return $this
+                ->apiMessage(__('auth::otp.code_sent'))
+                ->apiResponse();
         }
 
         try {
             $this->otp->issue($phone, $purpose);
         } catch (OtpDeliveryException) {
-            return $this->apiError(__('auth::otp.delivery_failed'), 'phone', 503);
+            throw ExceptionResponse::instance(__('auth::otp.delivery_failed'), 503)
+                ->setCustomCode(5031)
+                ->setCustomBody(['phone' => [__('auth::otp.delivery_failed')]]);
         }
 
-        return response()->json(['message' => __('auth::otp.code_sent')]);
+        return $this
+            ->apiMessage(__('auth::otp.code_sent'))
+            ->apiResponse();
     }
 
     public function verify(OtpVerifyRequest $request): JsonResponse
@@ -60,9 +69,9 @@ class OtpController extends Controller
 
         $tokenKey = $purpose === OtpPurpose::Registration ? 'registration_token' : 'reset_token';
 
-        return response()->json([
-            'message' => __('auth::otp.verified'),
-            $tokenKey => HandoffToken::issue($phone, $purpose),
-        ]);
+        return $this
+            ->apiMessage(__('auth::otp.verified'))
+            ->apiBody([$tokenKey => HandoffToken::issue($phone, $purpose)])
+            ->apiResponse();
     }
 }

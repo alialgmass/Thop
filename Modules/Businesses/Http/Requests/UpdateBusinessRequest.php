@@ -2,17 +2,12 @@
 
 namespace Modules\Businesses\Http\Requests;
 
-use Illuminate\Foundation\Http\FormRequest;
 use Modules\Businesses\Http\Requests\Concerns\BusinessProfileRules;
+use Modules\Core\Http\Requests\BaseRequest;
 
-class UpdateBusinessRequest extends FormRequest
+class UpdateBusinessRequest extends BaseRequest
 {
     use BusinessProfileRules;
-
-    public function authorize(): bool
-    {
-        return true;
-    }
 
     /**
      * @return array<string, mixed>

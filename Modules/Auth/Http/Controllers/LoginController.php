@@ -2,8 +2,6 @@
 
 namespace Modules\Auth\Http\Controllers;
 
-use App\Http\Concerns\RendersApiErrors;
-use App\Http\Controllers\Controller;
 use App\Models\User;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Hash;
@@ -11,11 +9,12 @@ use Laravel\Sanctum\PersonalAccessToken;
 use Modules\Auth\Http\Concerns\IssuesApiToken;
 use Modules\Auth\Http\Concerns\ThrottlesByKey;
 use Modules\Auth\Http\Requests\LoginRequest;
+use Modules\Core\Exceptions\ApiException\ExceptionResponse;
+use Modules\Core\Http\Controllers\Controller;
 
 class LoginController extends Controller
 {
     use IssuesApiToken;
-    use RendersApiErrors;
     use ThrottlesByKey;
 
     public function store(LoginRequest $request): JsonResponse
@@ -26,7 +25,9 @@ class LoginController extends Controller
         $user = $phone === null ? null : User::query()->where('phone', $phone)->first();
 
         if ($user === null || ! Hash::check($request->string('password')->value(), $user->password)) {
-            return $this->apiError(__('auth::otp.login_failed'), 'phone', 422);
+            throw ExceptionResponse::instance(__('auth::otp.login_failed'), 422)
+                ->setCustomCode(4222)
+                ->setCustomBody(['phone' => [__('auth::otp.login_failed')]]);
         }
 
         $this->clearThrottle($request->throttleKey());
@@ -40,6 +41,9 @@ class LoginController extends Controller
         $token = auth()->user()->currentAccessToken();
         $token->delete();
 
-        return response()->json(['message' => __('auth::otp.logged_out')]);
+        return $this
+            ->apiMessage(__('auth::otp.logged_out'))
+            ->apiBody([])
+            ->apiResponse();
     }
 }

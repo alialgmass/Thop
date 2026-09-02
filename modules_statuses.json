@@ -3,5 +3,6 @@
     "Taxonomy": true,
     "Businesses": true,
     "Verification": true,
-    "Admin": true
+    "Admin": true,
+    "Core": true
 }

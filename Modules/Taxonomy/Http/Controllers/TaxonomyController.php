@@ -2,8 +2,9 @@
 
 namespace Modules\Taxonomy\Http\Controllers;
 
-use App\Http\Controllers\Controller;
-use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
+use Illuminate\Http\JsonResponse;
+use Modules\Core\Http\Controllers\Controller;
+use Modules\Core\Support\Api\ApiResponse;
 use Modules\Taxonomy\Http\Resources\TaxonomyTermResource;
 use Modules\Taxonomy\Models\Color;
 use Modules\Taxonomy\Models\FabricType;
@@ -18,38 +19,42 @@ use Modules\Taxonomy\Models\Unit;
  */
 class TaxonomyController extends Controller
 {
-    public function governorates(): AnonymousResourceCollection
+    use ApiResponse;
+
+    public function governorates(): JsonResponse
     {
-        return $this->list(Governorate::class);
+        return $this->list('governorates', Governorate::class);
     }
 
-    public function fabricTypes(): AnonymousResourceCollection
+    public function fabricTypes(): JsonResponse
     {
-        return $this->list(FabricType::class);
+        return $this->list('fabric_types', FabricType::class);
     }
 
-    public function materials(): AnonymousResourceCollection
+    public function materials(): JsonResponse
     {
-        return $this->list(Material::class);
+        return $this->list('materials', Material::class);
     }
 
-    public function colors(): AnonymousResourceCollection
+    public function colors(): JsonResponse
     {
-        return $this->list(Color::class);
+        return $this->list('colors', Color::class);
     }
 
-    public function units(): AnonymousResourceCollection
+    public function units(): JsonResponse
     {
-        return $this->list(Unit::class);
+        return $this->list('units', Unit::class);
     }
 
     /**
      * @param  class-string<TaxonomyTerm>  $term
      */
-    private function list(string $term): AnonymousResourceCollection
+    private function list(string $key, string $term): JsonResponse
     {
-        return TaxonomyTermResource::collection(
-            $term::query()->active()->orderBy('name_en')->get(),
-        );
+        return $this
+            ->apiBody([$key => TaxonomyTermResource::collection(
+                $term::query()->active()->orderBy('name_en')->get(),
+            )])
+            ->apiResponse();
     }
 }

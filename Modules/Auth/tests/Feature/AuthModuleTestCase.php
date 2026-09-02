@@ -40,6 +40,6 @@ abstract class AuthModuleTestCase extends TestCase
             'phone' => $phone,
             'purpose' => $purpose->value,
             'code' => $this->otp->lastCodeFor(PhoneNumber::normalize($phone)),
-        ])->assertOk()->json($tokenKey);
+        ])->assertOk()->json("body.{$tokenKey}");
     }
 }

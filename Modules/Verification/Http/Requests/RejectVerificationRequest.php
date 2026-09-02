@@ -2,15 +2,10 @@
 
 namespace Modules\Verification\Http\Requests;
 
-use Illuminate\Foundation\Http\FormRequest;
+use Modules\Core\Http\Requests\BaseRequest;
 
-class RejectVerificationRequest extends FormRequest
+class RejectVerificationRequest extends BaseRequest
 {
-    public function authorize(): bool
-    {
-        return true;
-    }
-
     /**
      * @return array<string, mixed>
      */

@@ -1026,11 +1026,28 @@ Only tables required by actual SRS requirements are created — not the full ill
 
 ## 11. API Architecture (`/api/v1/`, REST)
 
-Standard response envelope for errors (per §23 instruction):
+Every `/api/v1/` response (success and error) uses the unified Core envelope (`Modules\Core\Support\Api\ApiResponse` + `Modules\Core\Exceptions\ApiException`):
 ```json
-{ "message": "Validation failed", "errors": { "price": ["The price field is required."] } }
+{ "custom_code": 2000, "status": true, "message": "Data retrieved successfully", "body": { ... }, "info": null }
 ```
-No SQL errors, stack traces, secrets, or infra details are ever exposed (§23).
+- `status` mirrors the HTTP class: `true` for any 2xx, `false` otherwise.
+- `body` carries the payload — a singular resource, `{ "data": ..., "links": ..., "meta": ... }` for paginated collections — or, on error, the field-keyed map `{ "field": ["message", ...] }`.
+- `custom_code` is the domain-level code (table below); `message` is a localized string (locale from `Accept-Language`, applied by the Core `api.language` middleware).
+- **Errors:** validation failures return HTTP 400 with per-field messages in `body`; custom exceptions render via `Modules\Core\Exceptions\Handler`; framework-native errors (403 policy denies, generic 429 limiter) keep Laravel defaults; `throttle.phone` (OTP) returns 429/4291. No SQL errors, stack traces, secrets, or infra details are ever exposed.
+
+| custom_code | HTTP | Meaning |
+|---|---|---|
+| 2000 | 2xx | success |
+| 4000 | 400 | validation failed / malformed request |
+| 4001 | 401 | unauthenticated |
+| 4091 | 409 | phone already registered |
+| 4092 | 409 | account type already set / verification request not pending |
+| 4221 | 422 | invalid OTP |
+| 4222 | 401 | login failed (bad phone or password) |
+| 4224 | 422 | invalid onboarding handoff |
+| 4290 | 429 | inline login throttle |
+| 4291 | 429 | `throttle.phone` middleware throttle |
+| 5031 | 503 | OTP delivery failed |
 
 ### 11.1 Endpoint catalog (grouped, R1 unless noted)
 

@@ -41,9 +41,9 @@ class BusinessProfileTest extends TestCase
         $this->actingAs($user)
             ->postJson('/api/v1/businesses', $this->validPayload())
             ->assertCreated()
-            ->assertJsonPath('company_name', 'Nile Textiles')
-            ->assertJsonPath('verified', false)
-            ->assertJsonPath('verification_status', 'unverified');
+            ->assertJsonPath('body.business.company_name', 'Nile Textiles')
+            ->assertJsonPath('body.business.verified', false)
+            ->assertJsonPath('body.business.verification_status', 'unverified');
 
         $this->assertDatabaseHas('business_accounts', [
             'user_id' => $user->id,
@@ -59,8 +59,8 @@ class BusinessProfileTest extends TestCase
 
         $this->actingAs($user)
             ->postJson('/api/v1/businesses', ['company_name' => ''])
-            ->assertStatus(422)
-            ->assertJsonValidationErrors(['company_name', 'activity', 'governorate_id', 'address', 'contact_person']);
+            ->assertStatus(400)
+            ->assertJsonStructure(['body' => ['company_name', 'activity', 'governorate_id', 'address', 'contact_person']]);
     }
 
     #[Test]
@@ -70,8 +70,8 @@ class BusinessProfileTest extends TestCase
 
         $this->actingAs($user)
             ->postJson('/api/v1/businesses', $this->validPayload(['governorate_id' => 999999]))
-            ->assertStatus(422)
-            ->assertJsonValidationErrorFor('governorate_id');
+            ->assertStatus(400)
+            ->assertJsonStructure(['body' => ['governorate_id']]);
     }
 
     #[Test]
@@ -83,7 +83,7 @@ class BusinessProfileTest extends TestCase
         $this->actingAs($user)
             ->postJson('/api/v1/businesses', $this->validPayload())
             ->assertStatus(422)
-            ->assertJsonValidationErrorFor('user_id');
+            ->assertJsonPath('message', __('businesses::profile.already_exists'));
 
         $this->assertDatabaseCount('business_accounts', 1);
     }
@@ -96,7 +96,8 @@ class BusinessProfileTest extends TestCase
         $this->actingAs($user)
             ->postJson('/api/v1/businesses', $this->validPayload())
             ->assertStatus(422)
-            ->assertJsonValidationErrorFor('account_type');
+            ->assertJsonPath('message', __('businesses::profile.customer_forbidden'))
+            ->assertJsonStructure(['body' => ['account_type']]);
     }
 
     #[Test]
@@ -108,7 +109,7 @@ class BusinessProfileTest extends TestCase
         $this->actingAs($user)
             ->patchJson("/api/v1/businesses/{$business->id}", ['company_name' => 'Renamed Co'])
             ->assertOk()
-            ->assertJsonPath('company_name', 'Renamed Co');
+            ->assertJsonPath('body.business.company_name', 'Renamed Co');
 
         $this->assertSame('Renamed Co', $business->refresh()->company_name);
     }
@@ -135,9 +136,9 @@ class BusinessProfileTest extends TestCase
         $this->actingAs($viewer)
             ->getJson("/api/v1/businesses/{$business->id}")
             ->assertOk()
-            ->assertJsonMissingPath('address')
-            ->assertJsonMissingPath('contact_person')
-            ->assertJsonPath('verified', false);
+            ->assertJsonMissingPath('body.business.address')
+            ->assertJsonMissingPath('body.business.contact_person')
+            ->assertJsonPath('body.business.verified', false);
     }
 
     #[Test]
@@ -152,7 +153,7 @@ class BusinessProfileTest extends TestCase
         $this->actingAs($admin)
             ->getJson("/api/v1/businesses/{$business->id}")
             ->assertOk()
-            ->assertJsonPath('contact_person', $business->contact_person);
+            ->assertJsonPath('body.business.contact_person', $business->contact_person);
 
         $this->actingAs($admin)
             ->patchJson("/api/v1/businesses/{$business->id}", ['activity' => 'Reviewed activity'])
@@ -167,7 +168,31 @@ class BusinessProfileTest extends TestCase
         $this->actingAs($business->owner)
             ->getJson("/api/v1/businesses/{$business->id}")
             ->assertOk()
-            ->assertJsonPath('verified', true);
+            ->assertJsonPath('body.business.verified', true);
+    }
+
+    #[Test]
+    public function the_actor_columns_record_who_created_and_last_edited_the_profile(): void
+    {
+        $user = User::factory()->importer()->create();
+
+        $this->actingAs($user)
+            ->postJson('/api/v1/businesses', $this->validPayload())
+            ->assertCreated();
+
+        $business = $user->businessAccount()->firstOrFail();
+        $this->assertSame($user->id, $business->created_by);
+
+        $admin = User::factory()->admin()->create();
+
+        // Clear the guards so the second request re-resolves the acting admin.
+        $this->app['auth']->forgetGuards();
+
+        $this->actingAs($admin)
+            ->patchJson("/api/v1/businesses/{$business->id}", ['activity' => 'Reviewed activity'])
+            ->assertOk();
+
+        $this->assertSame($admin->id, $business->refresh()->updated_by);
     }
 
     #[Test]

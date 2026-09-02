@@ -9,6 +9,8 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Carbon;
 use Modules\Businesses\Models\BusinessAccount;
+use Modules\Core\Support\Traits\HasCreatedByColumn;
+use Modules\Core\Support\Traits\HasUpdatedByColumn;
 use Modules\Verification\Database\Factories\VerificationRequestFactory;
 use Modules\Verification\Enums\VerificationRequestStatus;
 
@@ -24,7 +26,10 @@ use Modules\Verification\Enums\VerificationRequestStatus;
 class VerificationRequest extends Model
 {
     /** @use HasFactory<VerificationRequestFactory> */
+    use HasCreatedByColumn;
+
     use HasFactory;
+    use HasUpdatedByColumn;
 
     protected $guarded = ['id'];
 

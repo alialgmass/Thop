@@ -54,7 +54,7 @@ class VerificationUploadTest extends TestCase
         return $this->actingAs($as ?? $this->owner)->postJson(
             "/api/v1/businesses/{$this->business->id}/verification-documents",
             ['document_type_id' => $this->type->id, 'file' => $this->pdf()],
-        )->assertCreated()->json();
+        )->assertCreated()->json('body.document');
     }
 
     #[Test]
@@ -66,7 +66,7 @@ class VerificationUploadTest extends TestCase
                 'file' => $this->pdf(),
             ])
             ->assertCreated()
-            ->assertJsonPath('original_name', 'commercial-register.pdf');
+            ->assertJsonPath('body.document.original_name', 'commercial-register.pdf');
 
         $this->assertDatabaseCount('verification_documents', 1);
         $document = VerificationDocument::first();
@@ -82,8 +82,8 @@ class VerificationUploadTest extends TestCase
                 'document_type_id' => $this->type->id,
                 'file' => UploadedFile::fake()->create('malware.exe', 100),
             ])
-            ->assertStatus(422)
-            ->assertJsonValidationErrorFor('file');
+            ->assertStatus(400)
+            ->assertJsonStructure(['body' => ['file']]);
 
         $this->assertDatabaseCount('verification_documents', 0);
         $this->assertEmpty(Storage::disk('verification')->allFiles());
@@ -97,8 +97,8 @@ class VerificationUploadTest extends TestCase
                 'document_type_id' => $this->type->id,
                 'file' => UploadedFile::fake()->create('commercial-register.pdf', 100, 'application/x-msdownload'),
             ])
-            ->assertStatus(422)
-            ->assertJsonValidationErrorFor('file');
+            ->assertStatus(400)
+            ->assertJsonStructure(['body' => ['file']]);
 
         $this->assertDatabaseCount('verification_documents', 0);
     }
@@ -113,8 +113,8 @@ class VerificationUploadTest extends TestCase
                 'document_type_id' => $this->type->id,
                 'file' => UploadedFile::fake()->create('big.pdf', 500, 'application/pdf'),
             ])
-            ->assertStatus(422)
-            ->assertJsonValidationErrorFor('file');
+            ->assertStatus(400)
+            ->assertJsonStructure(['body' => ['file']]);
     }
 
     #[Test]
@@ -130,7 +130,7 @@ class VerificationUploadTest extends TestCase
         $this->actingAs($this->owner)
             ->postJson("/api/v1/businesses/{$this->business->id}/verification-request")
             ->assertOk()
-            ->assertJsonPath('verification_status', 'pending');
+            ->assertJsonPath('body.verification.verification_status', 'pending');
 
         $this->assertSame(VerificationStatus::Pending, $this->business->refresh()->verification_status);
         Event::assertDispatched(VerificationSubmitted::class);
@@ -142,7 +142,8 @@ class VerificationUploadTest extends TestCase
         $this->actingAs($this->owner)
             ->postJson("/api/v1/businesses/{$this->business->id}/verification-request")
             ->assertStatus(422)
-            ->assertJsonValidationErrorFor('documents');
+            ->assertJsonPath('message', __('verification::messages.no_documents'))
+            ->assertJsonStructure(['body' => ['documents']]);
     }
 
     #[Test]
@@ -157,8 +158,8 @@ class VerificationUploadTest extends TestCase
         $this->actingAs($this->owner)
             ->getJson("/api/v1/businesses/{$this->business->id}/verification-status")
             ->assertOk()
-            ->assertJsonPath('verification_status', 'rejected')
-            ->assertJsonPath('rejection_reason', 'Commercial register is expired.');
+            ->assertJsonPath('body.verification.verification_status', 'rejected')
+            ->assertJsonPath('body.verification.rejection_reason', 'Commercial register is expired.');
     }
 
     #[Test]

@@ -1,6 +1,6 @@
 # THOB — Progress Tracker
 
-آخر تحديث: 2026-09-01 — Phase 0 + Phase 1 اكتملا (branch `phase-0-auth`, 89 tests passing)
+آخر تحديث: 2026-09-02 — Core API envelope retrofit سليم، full suite 131 tests passing
 
 ## طريقة الاستخدام
 بعد كل Phase، حدّث الحالة هنا: `⬜ لسه` / `🔄 شغال عليها` / `✅ خلصت + tests عدّت`.
@@ -57,7 +57,7 @@
 - **DB**: التطوير/الاختبار على SQLite حاليًا؛ السبيك بيطلب MySQL 8 — التبديل مؤجّل (المايجريشنز متوافقة مع MySQL).
 - `JsonResource::withoutWrapping()` مفعّل عالميًا من `AuthServiceProvider` — مفيش `data` wrapper في ردود الـ API.
 - `POST /api/v1/auth/password/reset` بيلغي كل tokens الـ user (رغم إن السبيك مقالتش) — قرار أمان تحت قاعدة 3 في docs/CLAUDE.md.
-- `GET /api/v1/auth/account-types` بيرجّع الأنواع الأربعة بـ label/description ثنائي اللغة (US-ACC-02). الترجمة بتتبع locale التطبيق؛ ربط `Accept-Language` بالـ API مؤجّل (SetLocale middleware على web بس).
+- `GET /api/v1/auth/account-types` بيرجّع الأنواع الأربعة بـ label/description ثنائي اللغة (US-ACC-02). الترجمة بتتبع locale التطبيق. `Accept-Language` على `/api/v1/` بيتطبّق دلوقتي عبر Core `api.language` middleware (قرار Phase 1 retrofit — كان مؤجّل).
 - `OTP_DRIVER` env يحدد الـ OtpSender (`log` حاليًا) — إضافة مزود SMS = key جديد في `AuthServiceProvider::OTP_DRIVERS`.
 
 ### Phase 1 (من السبيك — issue #3)
@@ -91,6 +91,15 @@
 - تسجيل موديول الـ Filament: `discoverResources` تاني في `AdminPanelProvider`.
 - 6 tests (Livewire): non-admin 403، list، approve، reject + reason validation، actions hidden بعد الحسم. الإجمالي 98 green.
 - الباقي من Phase 9 (taxonomy CRUD, plans, featured, liquidity, ban, reports, onboarding) لسه ⬜.
+
+### Phase 1 — Core API envelope retrofit (applied 2026-09-02)
+- **انvelope موحّد على كل `/api/v1/`** من `Modules/Core`: `{ custom_code, status, message, body, info }` (`ApiResponse` trait + `ApiException` family + `Modules\Core\Exceptions\Handler`). `status` = `true` لأي 2xx. `custom_code` registry موثّق في السبيك §11. ترقيم codes: 2000 success، 4000 validation، 4001 unauthenticated، 4221/4222/4224 (OTP/login/handoff)، 4091 registered، 4092 account-type/not-pending، 4290/4291 throttle، 5031 OTP delivery.
+- **Validation → HTTP 400** (مش 422) في كل الموديولات؛ كل الـ requests على Core `BaseRequest`؛ 403 policy و-brand 429 بيلزموا defaults بتاعة Laravel.
+- **`App\Http\Concerns\RendersApiErrors` + `ResolvesRequestUser` اتحذفوا** — استُبدلوا بـ Core (`$request->user()`). الموديولات المهاجَرة: Auth (46)، Businesses (11)، Verification (29)، Taxonomy (5). كلها تتكلم باسم `apiBody()`/`ExceptionResponse` بدل الـ concatenated JSON.
+- **`created_by`/`updated_by`** (nullable FK → `users.id`) على `business_accounts`/taxonomy terms/`verification_requests`+documents/`document_types` عبر Core traits `HasCreatedByColumn`/`HasUpdatedByColumn` (boot listeners = `user('id')`). `AuditLog::actor()` → `Modules\Admin\Models\Admin` (Admin extends User، `record()` لسه بياخد `App\Models\User`).
+- **`api.language` middleware** (Core `AppLanguage`، alias من `CoreServiceProvider`) اتضاف على api route groups بتاعة كل الموديولات الأربعة.
+- **ملحوظة pagination**: nested `JsonResource` collection بتتسلسل مسطّحة من غير `data`؛ الـ queue paginated بيتبني صراحة عبر `toResponse($request)->getData(true)`.
+- Tests: Core envelope/2xx، actor-columns (BusinessProfileTest)، full suite **131 tests / 494 assertions green**.
 
 ## Blockers الحالية
 -

@@ -64,8 +64,8 @@ class AdminVerificationReviewTest extends TestCase
         $this->actingAs($this->admin)
             ->getJson('/api/v1/admin/verification-requests')
             ->assertOk()
-            ->assertJsonCount(1, 'data')
-            ->assertJsonPath('data.0.business_account_id', $this->business->id);
+            ->assertJsonCount(1, 'body.verification_requests.data')
+            ->assertJsonPath('body.verification_requests.data.0.business_account_id', $this->business->id);
     }
 
     #[Test]
@@ -77,7 +77,7 @@ class AdminVerificationReviewTest extends TestCase
         $this->actingAs($this->admin)
             ->postJson("/api/v1/admin/verification-requests/{$request->id}/approve")
             ->assertOk()
-            ->assertJsonPath('status', 'approved');
+            ->assertJsonPath('body.verification_request.status', 'approved');
 
         $request->refresh();
         $this->assertSame(VerificationRequestStatus::Approved, $request->status);
@@ -102,7 +102,7 @@ class AdminVerificationReviewTest extends TestCase
         $this->actingAs($this->owner)
             ->getJson("/api/v1/businesses/{$this->business->id}")
             ->assertOk()
-            ->assertJsonPath('verified', true);
+            ->assertJsonPath('body.business.verified', true);
     }
 
     #[Test]
@@ -112,8 +112,8 @@ class AdminVerificationReviewTest extends TestCase
 
         $this->actingAs($this->admin)
             ->postJson("/api/v1/admin/verification-requests/{$request->id}/reject", [])
-            ->assertStatus(422)
-            ->assertJsonValidationErrorFor('reason');
+            ->assertStatus(400)
+            ->assertJsonStructure(['body' => ['reason']]);
     }
 
     #[Test]
@@ -127,8 +127,8 @@ class AdminVerificationReviewTest extends TestCase
                 'reason' => 'Tax card is unreadable.',
             ])
             ->assertOk()
-            ->assertJsonPath('status', 'rejected')
-            ->assertJsonPath('rejection_reason', 'Tax card is unreadable.');
+            ->assertJsonPath('body.verification_request.status', 'rejected')
+            ->assertJsonPath('body.verification_request.rejection_reason', 'Tax card is unreadable.');
 
         $this->assertSame(VerificationStatus::Rejected, $this->business->refresh()->verification_status);
         $this->assertDatabaseHas('audit_logs', [
@@ -154,7 +154,7 @@ class AdminVerificationReviewTest extends TestCase
         $this->actingAs($this->owner)
             ->postJson("/api/v1/businesses/{$this->business->id}/verification-request")
             ->assertOk()
-            ->assertJsonPath('verification_status', 'pending');
+            ->assertJsonPath('body.verification.verification_status', 'pending');
 
         $this->assertSame(2, $this->business->verificationRequests()->count());
     }

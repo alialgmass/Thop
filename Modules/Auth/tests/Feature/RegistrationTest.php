@@ -18,17 +18,17 @@ class RegistrationTest extends AuthModuleTestCase
             'registration_token' => $token,
             'password' => 'Str0ng-Pass!',
             'password_confirmation' => 'Str0ng-Pass!',
-        ])->assertCreated()->assertJsonStructure(['token', 'user' => ['id', 'phone', 'account_type', 'status']]);
+        ])->assertCreated()->assertJsonStructure(['body' => ['token', 'user' => ['id', 'phone', 'account_type', 'status']]]);
 
         $user = User::query()->firstOrFail();
         $this->assertSame('+201012345678', $user->phone);
         $this->assertNull($user->account_type);
         $this->assertSame(UserStatus::PendingTypeSelection, $user->status);
 
-        $this->withToken($response->json('token'))
+        $this->withToken($response->json('body.token'))
             ->getJson('/api/v1/auth/me')
             ->assertOk()
-            ->assertJsonPath('phone', '+201012345678');
+            ->assertJsonPath('body.user.phone', '+201012345678');
     }
 
     #[Test]
@@ -38,7 +38,7 @@ class RegistrationTest extends AuthModuleTestCase
             'registration_token' => 'not-a-real-token',
             'password' => 'Str0ng-Pass!',
             'password_confirmation' => 'Str0ng-Pass!',
-        ])->assertStatus(422)->assertJsonValidationErrorFor('registration_token');
+        ])->assertStatus(422)->assertJsonStructure(['body' => ['registration_token']]);
     }
 
     #[Test]
@@ -62,7 +62,7 @@ class RegistrationTest extends AuthModuleTestCase
             'email' => 'taken@example.com',
             'password' => 'Str0ng-Pass!',
             'password_confirmation' => 'Str0ng-Pass!',
-        ])->assertStatus(422)->assertJsonValidationErrorFor('email');
+        ])->assertStatus(400)->assertJsonStructure(['body' => ['email']]);
     }
 
     #[Test]

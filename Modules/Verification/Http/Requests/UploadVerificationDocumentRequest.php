@@ -2,21 +2,16 @@
 
 namespace Modules\Verification\Http\Requests;
 
-use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
+use Modules\Core\Http\Requests\BaseRequest;
 
 /**
  * Validates a single verification document BEFORE it is written anywhere
  * (SEC-NFR-05). The file is checked both by extension (`mimes`) and by sniffed
  * media type (`mimetypes`) so a renamed executable cannot slip through.
  */
-class UploadVerificationDocumentRequest extends FormRequest
+class UploadVerificationDocumentRequest extends BaseRequest
 {
-    public function authorize(): bool
-    {
-        return true;
-    }
-
     /**
      * @return array<string, mixed>
      */

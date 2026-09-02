@@ -18,9 +18,9 @@ class AccountTypeTest extends AuthModuleTestCase
         $this->withToken($token)->postJson('/api/v1/auth/account-type', [
             'account_type' => AccountType::Importer->value,
         ])->assertOk()
-            ->assertJsonPath('user.account_type', 'importer')
-            ->assertJsonPath('user.status', 'active')
-            ->assertJsonPath('next_onboarding_step', 'business_profile');
+            ->assertJsonPath('body.user.account_type', 'importer')
+            ->assertJsonPath('body.user.status', 'active')
+            ->assertJsonPath('body.next_onboarding_step', 'business_profile');
 
         $user->refresh();
         $this->assertSame(AccountType::Importer, $user->account_type);
@@ -35,7 +35,7 @@ class AccountTypeTest extends AuthModuleTestCase
 
         $this->withToken($token)->postJson('/api/v1/auth/account-type', [
             'account_type' => AccountType::Customer->value,
-        ])->assertOk()->assertJsonPath('next_onboarding_step', 'none');
+        ])->assertOk()->assertJsonPath('body.next_onboarding_step', 'none');
     }
 
     #[Test]
@@ -43,9 +43,9 @@ class AccountTypeTest extends AuthModuleTestCase
     {
         $this->getJson('/api/v1/auth/account-types')
             ->assertOk()
-            ->assertJsonCount(4, 'data')
-            ->assertJsonStructure(['data' => [['value', 'label', 'description', 'requires_business_profile']]])
-            ->assertJsonPath('data.0.value', 'importer');
+            ->assertJsonCount(4, 'body.account_types')
+            ->assertJsonStructure(['body' => ['account_types' => [['value', 'label', 'description', 'requires_business_profile']]]])
+            ->assertJsonPath('body.account_types.0.value', 'importer');
     }
 
     #[Test]
@@ -53,14 +53,14 @@ class AccountTypeTest extends AuthModuleTestCase
     {
         $this->assertSame(
             'Customer',
-            $this->getJson('/api/v1/auth/account-types')->json('data.3.label'),
+            $this->getJson('/api/v1/auth/account-types')->json('body.account_types.3.label'),
         );
 
         $this->app->setLocale('ar');
 
         $this->assertSame(
             'عميل',
-            $this->getJson('/api/v1/auth/account-types')->json('data.3.label'),
+            $this->getJson('/api/v1/auth/account-types')->json('body.account_types.3.label'),
         );
     }
 
@@ -85,7 +85,8 @@ class AccountTypeTest extends AuthModuleTestCase
 
         $this->withToken($token)->postJson('/api/v1/auth/account-type', [
             'account_type' => 'distributor',
-        ])->assertStatus(422)->assertJsonValidationErrorFor('account_type');
+        ])->assertStatus(400)->assertJsonPath('message', 'The selected account type is invalid.')
+            ->assertJsonStructure(['body' => ['account_type']]);
     }
 
     #[Test]

@@ -2,14 +2,20 @@
 
 namespace Modules\Auth\Http\Controllers;
 
-use App\Http\Controllers\Controller;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Modules\Auth\Http\Resources\UserResource;
+use Modules\Core\Http\Controllers\Controller;
+use Modules\Core\Support\Api\ApiResponse;
 
 class MeController extends Controller
 {
-    public function __invoke(Request $request): UserResource
+    use ApiResponse;
+
+    public function __invoke(Request $request): JsonResponse
     {
-        return new UserResource($request->user());
+        return $this
+            ->apiBody(['user' => new UserResource($request->user())])
+            ->apiResponse();
     }
 }

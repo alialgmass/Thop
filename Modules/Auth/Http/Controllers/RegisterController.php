@@ -2,29 +2,32 @@
 
 namespace Modules\Auth\Http\Controllers;
 
-use App\Http\Concerns\RendersApiErrors;
-use App\Http\Controllers\Controller;
 use App\Models\User;
 use Illuminate\Http\JsonResponse;
 use Modules\Auth\Enums\UserStatus;
 use Modules\Auth\Http\Concerns\IssuesApiToken;
 use Modules\Auth\Http\Requests\RegisterRequest;
+use Modules\Core\Exceptions\ApiException\ExceptionResponse;
+use Modules\Core\Http\Controllers\Controller;
 
 class RegisterController extends Controller
 {
     use IssuesApiToken;
-    use RendersApiErrors;
 
     public function __invoke(RegisterRequest $request): JsonResponse
     {
         $phone = $request->verifiedPhone();
 
         if ($phone === null) {
-            return $this->apiError(__('auth::otp.invalid_handoff'), 'registration_token', 422);
+            throw ExceptionResponse::instance(__('auth::otp.invalid_handoff'), 422)
+                ->setCustomCode(4224)
+                ->setCustomBody(['registration_token' => [__('auth::otp.invalid_handoff')]]);
         }
 
         if (User::query()->where('phone', $phone)->exists()) {
-            return $this->apiError(__('auth::otp.already_registered'), 'phone', 409);
+            throw ExceptionResponse::instance(__('auth::otp.already_registered'), 409)
+                ->setCustomCode(4091)
+                ->setCustomBody(['phone' => [__('auth::otp.already_registered')]]);
         }
 
         $user = User::query()->create([

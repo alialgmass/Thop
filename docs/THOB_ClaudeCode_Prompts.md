@@ -79,8 +79,10 @@
   — متخترعش أرقام)
 - Section 10.6 (subscription_plans, subscription_entitlements, subscriptions, 
   subscription_usage_counters)
-- Section 11 (Entitlement Architecture من البرومبت الأصلي) — 
-  الفحص لازم يبقى server-side بالكامل، ممنوع نثق في أي بيانات جاية من الكلاينت
+- US-SUB-03 + SEC-NFR-04 + BR-SUB-01 (Entitlement Architecture) — 
+  الفحص لازم يبقى server-side بالكامل ضد subscription_entitlements، 
+  ممنوع نثق في أي بيانات جاية من الكلاينت
+- Section 11 (API Architecture) — endpoints الـ subscriptions الموضحة في السبيك
 - Business Rules: BR-SUB-01, BR-SUB-02, BR-SUB-03 (Section 5)
 
 المطلوب:
@@ -90,12 +92,24 @@
    - Upgrade فوري / Downgrade-Cancel في آخر المدة المدفوعة (US-SUB-05)
    - انتهاء الاشتراك → حالة مقيدة (products تتخفي مش تتمسح) (US-SUB-08)
    - Trial + منح ترويجية من الأدمن (US-SUB-07)
+   - "My Subscription" view: plan name, usage counters vs. limits, 
+     renewal date, invoice history (US-SUB-04)
+   - API endpoints من Section 11: GET /subscription-plans?account_type=, 
+     POST /subscriptions, PATCH /subscriptions/{id}, 
+     GET /subscriptions/{id}/usage, GET /subscriptions/{id}/invoices
+   - US-SUB-06 (recurring billing) يتطلب R4 — سيبه لـ Phase 13
+   - إدارة الـ plans من الـ Admin UI هتيجي في Phase 9 (US-ADM-04) — 
+     هنا بس الـ schema والـ seed
 2. Seed: أضف plans الاستيراد (Basic/Pro/Premium) بالصلاحيات المذكورة في 
-   Section 6 بالظبط، من غير أسعار (اجعل price nullable).
+   Section 6 بالظبط، من غير أسعار (اجعل price nullable). كمان أضف 
+   Wholesaler و Retailer كـ single-tier plans بالصلاحيات المذكورة في Section 6.
 3. Tests: محاولة تجاوز حد المنتجات (لسه مفيش Catalog، اعمل mock/stub بسيط 
    يستخدم EntitlementService)، upgrade فوري، downgrade مايقصّش المدة المدفوعة، 
    انتهاء الاشتراك يغيّر الحالة صح، ومحاولة تزوير plan claim من الكلاينت 
-   لازم تترفض.
+   لازم تترفض، plan listing يتفلتر حسب account type (US-SUB-01/02)، 
+   "My Subscription" view يرجّع البيانات الصح (US-SUB-04)، 
+   trial يتفعّل من غير payment method (US-SUB-07)، 
+   تعديل entitlements من الأدمن ي ảnhّر الخطط الجديدة بس مش الحالية (US-ADM-04).
 
 اديني ملخص.
 ```

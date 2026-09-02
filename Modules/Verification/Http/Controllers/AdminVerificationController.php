@@ -2,12 +2,10 @@
 
 namespace Modules\Verification\Http\Controllers;
 
-use App\Http\Concerns\RendersApiErrors;
-use App\Http\Concerns\ResolvesRequestUser;
-use App\Http\Controllers\Controller;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
+use Modules\Core\Http\Controllers\Controller;
+use Modules\Core\Support\Api\ApiResponse;
 use Modules\Verification\Actions\DecideVerificationRequest;
 use Modules\Verification\Enums\VerificationRequestStatus;
 use Modules\Verification\Exceptions\VerificationNotPendingException;
@@ -20,20 +18,21 @@ use Modules\Verification\Policies\VerificationPolicy;
  * Admin review of verification requests (US-ADM-01). The decision itself is
  * applied by {@see DecideVerificationRequest} — shared with the Filament panel —
  * so the audit-log write (BR-ADM-01) and domain events live in one place.
+ * A {@see VerificationNotPendingException} propagates and is rendered as a
+ * 409 envelope (custom code 4092).
  */
 class AdminVerificationController extends Controller
 {
-    use RendersApiErrors;
-    use ResolvesRequestUser;
+    use ApiResponse;
 
     public function __construct(
         private readonly VerificationPolicy $policy,
         private readonly DecideVerificationRequest $decide,
     ) {}
 
-    public function queue(Request $request): AnonymousResourceCollection
+    public function queue(Request $request): JsonResponse
     {
-        abort_unless($this->policy->viewAny($this->currentUser($request)), 403);
+        abort_unless($this->policy->viewAny($request->user()), 403);
 
         $requests = VerificationRequest::query()
             ->where('status', VerificationRequestStatus::Pending)
@@ -42,34 +41,32 @@ class AdminVerificationController extends Controller
             ->latest('submitted_at')
             ->paginate();
 
-        return VerificationRequestResource::collection($requests);
+        $payload = VerificationRequestResource::collection($requests)->toResponse($request)->getData(true);
+
+        return $this
+            ->apiBody(['verification_requests' => $payload])
+            ->apiResponse();
     }
 
     public function approve(Request $request, VerificationRequest $verificationRequest): JsonResponse
     {
-        $admin = $this->currentUser($request);
-        abort_unless($this->policy->review($admin, $verificationRequest), 403);
+        abort_unless($this->policy->review($request->user(), $verificationRequest), 403);
 
-        try {
-            $this->decide->approve($verificationRequest, $admin);
-        } catch (VerificationNotPendingException) {
-            return $this->apiError(__('verification::messages.not_pending'), 'status', 409);
-        }
+        $this->decide->approve($verificationRequest, $request->user());
 
-        return (new VerificationRequestResource($verificationRequest->load('documents')))->response();
+        return $this
+            ->apiBody(['verification_request' => new VerificationRequestResource($verificationRequest->load('documents'))])
+            ->apiResponse();
     }
 
     public function reject(RejectVerificationRequest $request, VerificationRequest $verificationRequest): JsonResponse
     {
-        $admin = $this->currentUser($request);
-        abort_unless($this->policy->review($admin, $verificationRequest), 403);
+        abort_unless($this->policy->review($request->user(), $verificationRequest), 403);
 
-        try {
-            $this->decide->reject($verificationRequest, $admin, (string) $request->string('reason'));
-        } catch (VerificationNotPendingException) {
-            return $this->apiError(__('verification::messages.not_pending'), 'status', 409);
-        }
+        $this->decide->reject($verificationRequest, $request->user(), (string) $request->string('reason'));
 
-        return (new VerificationRequestResource($verificationRequest->load('documents')))->response();
+        return $this
+            ->apiBody(['verification_request' => new VerificationRequestResource($verificationRequest->load('documents'))])
+            ->apiResponse();
     }
 }

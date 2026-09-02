@@ -4,6 +4,8 @@ namespace Modules\Verification\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Modules\Core\Support\Traits\HasCreatedByColumn;
+use Modules\Core\Support\Traits\HasUpdatedByColumn;
 use Modules\Verification\Database\Factories\DocumentTypeFactory;
 
 /**
@@ -17,7 +19,10 @@ use Modules\Verification\Database\Factories\DocumentTypeFactory;
 class DocumentType extends Model
 {
     /** @use HasFactory<DocumentTypeFactory> */
+    use HasCreatedByColumn;
+
     use HasFactory;
+    use HasUpdatedByColumn;
 
     protected $guarded = ['id'];
 
