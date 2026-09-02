@@ -1,0 +1,11 @@
+{
+    "name": "Subscriptions",
+    "alias": "subscriptions",
+    "description": "Subscription plans, entitlements, and usage tracking (US-SUB-*).",
+    "keywords": [],
+    "priority": 0,
+    "providers": [
+        "Modules\\Subscriptions\\Providers\\SubscriptionsServiceProvider"
+    ],
+    "files": []
+}

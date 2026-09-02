@@ -4,5 +4,6 @@
     "Businesses": true,
     "Verification": true,
     "Admin": true,
-    "Core": true
+    "Core": true,
+    "Subscriptions": true
 }

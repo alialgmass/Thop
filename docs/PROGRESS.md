@@ -1,6 +1,6 @@
 # THOB — Progress Tracker
 
-آخر تحديث: 2026-09-02 — Core API envelope retrofit سليم، full suite 131 tests passing
+آخر تحديث: 2026-09-02 — Phase 2 (Subscriptions) code review 14 patches مطبّقة، full suite 197 tests passing
 
 ## طريقة الاستخدام
 بعد كل Phase، حدّث الحالة هنا: `⬜ لسه` / `🔄 شغال عليها` / `✅ خلصت + tests عدّت`.
@@ -12,7 +12,7 @@
 |---|---|---|---|
 | 0 | Project Setup + Auth Foundation | ✅ | Spec: issue #1. Module `Auth` (OTP request/verify, register, login/logout, OTP password reset, `me`, account-type). Sanctum bearer tokens. `/api/v1/auth/*`. Faked `OtpSender` seam. 43 module tests + full suite green. Stripped leftover multi-tenant POS scaffold. |
 | 1 | Business Profile + Verification + Audit Log | ✅ | Spec: issue #3; tickets #4–#9. `Taxonomy` (governorates+fabric_types+materials+colors+units, `GET /api/v1/taxonomy/*` public read, seeders; admin CRUD → Phase 9). `Businesses` (`business_accounts` + profile CRUD `/api/v1/businesses`, `BusinessPolicy`, `verified` flag computed from `verification_status`). `Verification` (`document_types`/`verification_requests`/`verification_documents`, private `verification` disk, owner upload/submit/status/signed download, admin queue/approve/reject with mandatory reason, `VerificationPolicy`). `Admin` audit-log foundation (`audit_logs` append-only, `AuditLog::record()`, model blocks update/delete). Events `VerificationSubmitted/Approved/Rejected` fired, no listeners (Phase 8). Published spatie/permission migration + `admin` role seeder (Phase 0 gap). 46 new tests, full suite 89 green. |
-| 2 | Subscriptions & Entitlements | ⬜ | |
+| 2 | Subscriptions & Entitlements | ✅ | Spec issue #30. Module `Subscriptions`: plans/entitlements/subscriptions/usage counters + `EntitlementService` (server-side gate) + REST API (`/api/v1/subscription-plans`, `/api/v1/subscriptions` CRUD/usage) + Filament admin resources + scheduled `subscriptions:process-period-ends` command. 64 module tests, full suite 197 green. Code review (14 patches) applied. See Phase 2 section below. |
 | 3.1 | Catalog — Products الأساسية | ⬜ | |
 | 3.2 | Catalog — Media | ⬜ | |
 | 3.3 | Catalog — Bulk Import + Limits | ⬜ | |
@@ -100,6 +100,18 @@
 - **`api.language` middleware** (Core `AppLanguage`، alias من `CoreServiceProvider`) اتضاف على api route groups بتاعة كل الموديولات الأربعة.
 - **ملحوظة pagination**: nested `JsonResource` collection بتتسلسل مسطّحة من غير `data`؛ الـ queue paginated بيتبني صراحة عبر `toResponse($request)->getData(true)`.
 - Tests: Core envelope/2xx، actor-columns (BusinessProfileTest)، full suite **131 tests / 494 assertions green**.
+
+### Phase 2 — Subscriptions & Entitlements (applied 2026-09-02)
+- **Module `Modules/Subscriptions/`** جديد — جداول `subscription_plans`, `subscription_entitlements`, `subscriptions`, `subscription_usage_counters` (migration `2026_09_02_000008`). `subscriptions.notes` JSON. Enums `SubscriptionStatus` (Active/Expired/Cancelled/Restricted) و `BillingCycle` (Monthly/Annual).
+- **Models**: `SubscriptionPlan`, `SubscriptionEntitlement` (`$timestamps=false`), `Subscription` (`isExpired()` بـ trial-end, `isTrial()`, `markExpired()`), `SubscriptionUsageCounter` (`CREATED_AT`/`UPDATED_AT=null`). علاقة `subscription()` HasOne عبر `latestOfMany` على `BusinessAccount`.
+- **`EntitlementService`** — نقطة الفحص الوحيدة server-side (BR-SUB-01): `can()`, `get()`, `incrementUsage()` (firstOrCreate+increment لـ SQLite), `decrementUsage()`, `currentUsage()`, `getActiveSubscription()`.
+- **API**: `SubscriptionController` — `plans()`, `store()`, `show()`, `usage()`, `update()` (Upgrade فوري بيرجّع subscription جديد؛ Downgrade/Cancel بيخزّن `notes` وبيرجّع الحالي — BR-SUB-02). Form requests `SubscribeRequest`/`UpdateSubscriptionRequest`. `SubscriptionResource`/`SubscriptionPlanResource` (API) + `SubscriptionPolicy` (owner **أو** admin).
+- **Seeder/Factories**: `SubscriptionPlanSeeder` (Importer Basic/Pro/Premium + Wholesaler + Retailer بـ entitlement من Section 6، بدون أسعار — `price` nullable). `SubscriptionPlanFactory` (states importer/wholesaler/retailer)، `SubscriptionFactory` (active/expired/cancelled/trial). `DatabaseSeeder` اتعمّد بـ seeder.
+- **Filament admin** على `/admin`: `SubscriptionPlanResource` (CRUD + Repeater entitlements) و `SubscriptionResource` (read-only `canCreate/canEdit/canDelete=false`; `ViewSubscription` بأكشنز Grant Trial/Promo, Extend Period, Cancel). تسجيل عبر `discoverResources` في `AdminPanelProvider` + `@source` في `theme.css`.
+- **Policy fix**: `SubscriptionPolicy` view/update/delete كانت owner-only فتكسر الـ panel (403) — اتضاف `|| $user->hasRole('admin')` (نمط `VerificationPolicy::viewStatus`).
+- **Filament component fix**: `TextInput::decimalDigits()` مش موجودة في Filament v5 — اتشالت (استُبدلت بـ `step(0.01)`).
+- Tests: 13 ملفات — `SubscriptionPlanTest`, `SubscribeTest`, `UpgradeSubscriptionTest`, `DowngradeSubscriptionTest`, `EntitlementServiceTest`, `SubscriptionExpiryTest`, `ClientTamperingTest`, `TrialPromoTest`, `SubscriptionPlanPanelTest`, `SubscriptionPanelTest`, `PeriodEndCommandTest`, `SubscriptionShowTest` (جديدة). Module filter=64 tests، السُويت الكامل **197 tests / 643 assertions green**.
+- **Code review (bmad-code-review, full mode)**: 14 patches مطبّقة — P1 `scopeActiveForBusiness` بيفلتر فترة/trial المنتهية؛ P2 أمر مجدول `subscriptions:process-period-ends` بيطبّق downgrade/cancel عند نهاية الفترة ويمرّر expired→Restricted؛ P3 دمج `notes` بدون clobber؛ P4 رفض subscribe لـ plan من `account_type` مختلف (4222 `plan_type_mismatch`)؛ P5 حذف scaffold ميّت؛ P6/P7 authorize على `usage`/`show`/`viewAny`؛ P8 status guard في resource؛ P9 سقوف رقمية في seeder؛ P10 إضافة `GET /subscriptions/{id}` (`show`)؛ P11 `decrementUsage` عداد guard؛ P12 `grantTrial` visible فقط لما غير active + null-guard entitlements؛ P13 `$fillable` بدل `$guarded`؛ P14 `SubscriptionPlanResource`. مؤجّل (موثّق): product-hiding عند expiry (BR-SUB-03، Catalog لاحقًا)، `account_type` enum علىـ plan، races/concurrency، rate limiting، FK on-delete. مرفوض بموافقة المستخدم: plans endpoint خاص (D4)، proration (D2).
 
 ## Blockers الحالية
 -

@@ -12,6 +12,7 @@ use Modules\Businesses\Database\Factories\BusinessAccountFactory;
 use Modules\Businesses\Enums\VerificationStatus;
 use Modules\Core\Support\Traits\HasCreatedByColumn;
 use Modules\Core\Support\Traits\HasUpdatedByColumn;
+use Modules\Subscriptions\Models\Subscription;
 use Modules\Taxonomy\Models\Governorate;
 use Modules\Verification\Models\VerificationRequest;
 
@@ -93,6 +94,14 @@ class BusinessAccount extends Model
     public function verificationRequests(): HasMany
     {
         return $this->hasMany(VerificationRequest::class);
+    }
+
+    /**
+     * @return HasOne<Subscription, $this>
+     */
+    public function subscription(): HasOne
+    {
+        return $this->hasOne(Subscription::class)->latestOfMany();
     }
 
     /**

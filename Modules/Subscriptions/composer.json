@@ -1,0 +1,23 @@
+{
+    "name": "thob/subscriptions",
+    "description": "Subscriptions & Entitlements (US-SUB-*, BR-SUB-*).",
+    "authors": [],
+    "extra": {
+        "laravel": {
+            "providers": [],
+            "aliases": {}
+        }
+    },
+    "autoload": {
+        "psr-4": {
+            "Modules\\Subscriptions\\": "/",
+            "Modules\\Subscriptions\\Database\\Factories\\": "database/factories/",
+            "Modules\\Subscriptions\\Database\\Seeders\\": "database/seeders/"
+        }
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "Modules\\Subscriptions\\Tests\\": "tests/"
+        }
+    }
+}
