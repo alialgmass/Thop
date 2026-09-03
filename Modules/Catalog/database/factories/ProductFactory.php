@@ -27,12 +27,17 @@ class ProductFactory extends Factory
             'fabric_type_id' => FabricType::factory(),
             'material_id' => Material::factory(),
             'governorate_id' => Governorate::factory(),
-            'name_ar' => fake()->unique()->word().' قماش',
+            'name_ar' => 'قماش '.fake()->unique()->numerify('######'),
             'price' => fake()->randomFloat(2, 1, 500),
             'price_on_contact' => false,
             'quantity_available' => fake()->numberBetween(1, 1000),
             'status' => ProductStatus::Draft,
         ];
+    }
+
+    public function draft(): static
+    {
+        return $this->state(['status' => ProductStatus::Draft]);
     }
 
     public function pendingReview(): static

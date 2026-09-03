@@ -1,17 +1,19 @@
 <?php
 
-namespace Modules\Catalog\Http\Resources;
+namespace Modules\Search\Http\Resources;
 
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
+use Modules\Catalog\Http\Resources\ProductMediaResource;
+use Modules\Catalog\Http\Resources\ProductPriceTierResource;
 
 /**
- * Public-facing product card for search results and per-supplier catalogs
- * (US-SRC-01..04). Exposes only buyer-facing fields plus the `featured` flag
- * (BR-SRC-01) and the owning supplier's identity for the results list. Does
- * NOT expose seller-internal metadata (created_by, rejection_reason, …).
+ * Buyer-facing product detail (US-SRC-05): full spec, all images, price tiers,
+ * and the supplier identity + verified badge the client needs for the
+ * "Contact" / "Request Quotation" CTAs (the inquiry itself is Phase 6).
+ * Seller-internal fields (status, rejection_reason, created_by) are omitted.
  */
-class ProductCardResource extends JsonResource
+class ProductDetailResource extends JsonResource
 {
     /**
      * @return array<string, mixed>
@@ -38,23 +40,18 @@ class ProductCardResource extends JsonResource
             'colors' => $this->whenLoaded('colors', fn () => $this->colors->pluck('id', 'name_en')),
             'price_tiers' => ProductPriceTierResource::collection($this->whenLoaded('priceTiers')),
             'media' => ProductMediaResource::collection($this->whenLoaded('media')),
-            'primary_image' => $this->whenLoaded('media', fn () => $this->primaryImageUrl()),
             'supplier' => $this->whenLoaded('businessAccount', fn () => [
                 'id' => $this->businessAccount->id,
                 'company_name' => $this->businessAccount->company_name,
+                'governorate' => $this->businessAccount->relationLoaded('governorate')
+                    ? $this->businessAccount->governorate?->localizedName()
+                    : null,
                 'verified' => $this->businessAccount->isVerified(),
             ]),
+            'actions' => [
+                'contact' => ['supplier_id' => $this->business_account_id, 'product_id' => $this->id],
+                'request_quotation' => ['supplier_id' => $this->business_account_id, 'product_id' => $this->id],
+            ],
         ];
-    }
-
-    private function primaryImageUrl(): ?string
-    {
-        $image = $this->media->firstWhere('type', 'image');
-
-        if ($image === null) {
-            return null;
-        }
-
-        return (new ProductMediaResource($image))->resolve()['url'] ?? null;
     }
 }

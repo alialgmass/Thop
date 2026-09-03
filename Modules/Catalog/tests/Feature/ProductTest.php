@@ -9,6 +9,7 @@ use Modules\Catalog\Models\Product;
 use Modules\Subscriptions\Models\Subscription;
 use Modules\Subscriptions\Models\SubscriptionEntitlement;
 use Modules\Subscriptions\Models\SubscriptionPlan;
+use Modules\Subscriptions\Services\EntitlementService;
 use Modules\Taxonomy\Models\Color;
 use Modules\Taxonomy\Models\FabricType;
 use Modules\Taxonomy\Models\Governorate;
@@ -163,7 +164,7 @@ class ProductTest extends TestCase
         BusinessAccount::factory()->for($foreign, 'owner')->create();
 
         $this->actingAs($foreign)
-            ->getJson("/api/v1/products/{$product->id}")
+            ->getJson("/api/v1/products/mine/{$product->id}")
             ->assertStatus(403);
 
         $this->actingAs($foreign)
@@ -191,7 +192,7 @@ class ProductTest extends TestCase
         $this->assertNotSoftDeleted('products', ['id' => $kept->id]);
 
         $this->actingAs($this->user)
-            ->getJson('/api/v1/products')
+            ->getJson('/api/v1/products/mine')
             ->assertOk()
             ->assertJsonCount(1, 'body.products.data')
             ->assertJsonPath('body.products.data.0.id', $kept->id);
@@ -200,8 +201,15 @@ class ProductTest extends TestCase
     #[Test]
     public function product_creation_is_blocked_when_the_plan_limit_is_exhausted(): void
     {
-        $this->activeSubscription();
-        Product::factory()->count(100)->for($this->business)->create();
+        Product::factory()->count(100)->for($this->business)->create([
+            'fabric_type_id' => $this->fabricType->id,
+            'material_id' => $this->material->id,
+            'governorate_id' => $this->governorate->id,
+        ]);
+
+        // Real creates bump this counter; factory inserts bypass it (BR-SEL-01).
+        app(EntitlementService::class)
+            ->incrementUsage($this->business, 'product_count', 100);
 
         $this->actingAs($this->user)
             ->postJson('/api/v1/products', $this->validPayload())

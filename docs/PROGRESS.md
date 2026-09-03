@@ -16,7 +16,7 @@
 | 3.1 | Catalog — Products الأساسية | ⬜ | Spec: issue #11. Module `Catalog` — `products`/`product_colors`/`product_price_tiers`، lifecycle، CRUD `/api/v1/products`، `ProductPolicy` ownership، BR-SEL-03 price XOR، MOQ/tiers، duplicate/hide/unavailable/soft-delete. |
 | 3.2 | Catalog — Media | ⬜ | Spec: issue #11. `product_media` على disk `public`، MIME/size validation، ≥1 صورة قبل publish، two-phase save (AVL-NFR-03). |
 | 3.3 | Catalog — Bulk Import + Limits | ⬜ | Spec: issue #11. XLSX/CSV queued import (row-level partial failure)، `EntitlementService` product_limit server-side (BR-SEL-01)، review queue (US-SEL-11) REST + Filament عبر `DecideProductReview` action مشترك. ملاحظة: مكتبة spreadsheet محتاجة موافقة. |
-| 4 | Search | ⬜ | |
+| 4 | Search | ✅ | Spec: issue #12. Module `Search`: `SearchNormalizer` (AR folds + tashkeel strip + EN synonym map), `ProductSearchService`/`SupplierSearchService` (dual-driver: MySQL FULLTEXT ⇄ SQLite LIKE), `FeaturedRanker` (bounded within-page boost via `EntitlementService` `featured_products`/`featured_supplier` + truthful `featured` flag), `ZeroResultLogger` → `search_logs` (zero-result only). Public `GET /api/v1/products` (search/filter/sort/paginate), `GET /api/v1/products/{id}` (buyer detail, 404 not 403 for non-visible), `GET /api/v1/businesses` (supplier search), `GET /api/v1/businesses/{id}/catalog` (moved from Catalog, now filter/sort-aware). Seller self-list repointed `GET /products` → `GET /products/mine` (+ `/products/mine/{id}`). `Product::scopeBuyerVisible` (BR-SRC-02, excludes suspended-owner). Observers keep `products.search_text` / `business_accounts.search_text` synced. 32 new tests (13 unit normalizer + 14 product search + 5 supplier), full suite 240 green. No new dependency. |
 | 5 | Favorites + Comparison | ⬜ | |
 | 6 | Inquiries, RFQ, Quotation, Leads | ⬜ | |
 | 7 | Chat (Pusher) | ⬜ | |
@@ -112,6 +112,18 @@
 - **Filament component fix**: `TextInput::decimalDigits()` مش موجودة في Filament v5 — اتشالت (استُبدلت بـ `step(0.01)`).
 - Tests: 13 ملفات — `SubscriptionPlanTest`, `SubscribeTest`, `UpgradeSubscriptionTest`, `DowngradeSubscriptionTest`, `EntitlementServiceTest`, `SubscriptionExpiryTest`, `ClientTamperingTest`, `TrialPromoTest`, `SubscriptionPlanPanelTest`, `SubscriptionPanelTest`, `PeriodEndCommandTest`, `SubscriptionShowTest` (جديدة). Module filter=64 tests، السُويت الكامل **197 tests / 643 assertions green**.
 - **Code review (bmad-code-review, full mode)**: 14 patches مطبّقة — P1 `scopeActiveForBusiness` بيفلتر فترة/trial المنتهية؛ P2 أمر مجدول `subscriptions:process-period-ends` بيطبّق downgrade/cancel عند نهاية الفترة ويمرّر expired→Restricted؛ P3 دمج `notes` بدون clobber؛ P4 رفض subscribe لـ plan من `account_type` مختلف (4222 `plan_type_mismatch`)؛ P5 حذف scaffold ميّت؛ P6/P7 authorize على `usage`/`show`/`viewAny`؛ P8 status guard في resource؛ P9 سقوف رقمية في seeder؛ P10 إضافة `GET /subscriptions/{id}` (`show`)؛ P11 `decrementUsage` عداد guard؛ P12 `grantTrial` visible فقط لما غير active + null-guard entitlements؛ P13 `$fillable` بدل `$guarded`؛ P14 `SubscriptionPlanResource`. مؤجّل (موثّق): product-hiding عند expiry (BR-SUB-03، Catalog لاحقًا)، `account_type` enum علىـ plan، races/concurrency، rate limiting، FK on-delete. مرفوض بموافقة المستخدم: plans endpoint خاص (D4)، proration (D2).
+
+### Phase 4 — Search (issue #12, applied 2026-09-04)
+- **`GET /api/v1/products` repointed** لبحث عام (Search module، غير محمي عبر `optional.sanctum` alias جديد بيحل مستخدم Sanctum لو فيه توكن). قائمة البايع (كل الحالات) اتنقلت لـ `GET /api/v1/products/mine` + `GET /api/v1/products/mine/{id}`. `ProductController@index` بقى يرجّع `.toResponse()->getData(true)` زي `queue()`.
+- **`GET /api/v1/businesses/{id}/catalog`** اتنقل من Catalog لـ Search؛ بقى بياخد نفس عقد الفلاتر/الترتيب/الـ pagination. `ProductController@publicCatalog` اتشال.
+- **`sort=supplier_rating`** بيتدهور لـ "الموثّق الأول ثم الأحدث" — مفيش نظام تقييم موردين في R1 (Implementation Assumption).
+- **فلتر "specialty" للموردين** = عمود `business_accounts.activity` النصّي الحر عبر عمود `search_text` منرمَل — مفيش taxonomy تخصصات (Implementation Assumption).
+- **Zero-result logging** بيتسجّل فقط عند نتيجة صفر بالظبط (عتبة "low-result" في السبيك اتسابت 0 للـ phase دي). فشل التسجيل مبيكسرش الرد.
+- **Featured boost** = إعادة ترتيب ثابتة داخل الصفحة فقط (مش بيسحب عنصر عبر حدود الصفحات)، وزن ثابت في الكود (مش admin-editable لسه). مبني على مفاتيح `featured_products` / `featured_supplier` البوليانية فقط — `search_priority` المتدرّج مش موصّل (مش موجود في seeder).
+- **Open Decision #5**: منتجات البيزنس غير الموثّق بتظهر في البحث (تتميّز فقط بغياب البادج). `Product::scopeBuyerVisible` مكتوبة عشان قلبها لـ "الموثّق فقط" يبقى سطر واحد.
+- **عمود `search_text`** على `products` و`business_accounts` (منرمَل)، بيتزامن عبر observers في Search module. مايجريشن Phase 4 بيبدّل MySQL FULLTEXT من `(name_ar,name_en)` لـ `search_text` وبيضيف FULLTEXT على `business_accounts`؛ كله no-op على SQLite.
+- **اختبار FULLTEXT الحقيقي + هدف p95<2s عند 100k منتج (PRF-NFR-01)**: فحص MySQL يدوي/CI مؤجّل — مش تيست SQLite، تماشيًا مع سياسة "المايجريشنز MySQL-compatible، التيستات على SQLite".
+- **إصلاحات Phase 3 عرضية**: `ProductFactory` أضيف `draft()` state و`name_ar` بقى unique رقمي (كان `fake()->unique()->word()` بيخلص pool)؛ `ProductMediaResource` كان ناقص `use Storage`.
 
 ## Blockers الحالية
 -

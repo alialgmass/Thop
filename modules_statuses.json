@@ -6,5 +6,6 @@
     "Admin": true,
     "Core": true,
     "Subscriptions": true,
-    "Catalog": true
+    "Catalog": true,
+    "Search": true
 }

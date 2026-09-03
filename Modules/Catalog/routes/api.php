@@ -4,18 +4,15 @@ use Illuminate\Support\Facades\Route;
 use Modules\Catalog\Http\Controllers\AdminProductReviewController;
 use Modules\Catalog\Http\Controllers\ProductController;
 
-// Public buyer-facing catalog (minimal R1 build, US-SRC-01 anticipated)
-Route::prefix('v1')->name('catalog.')->group(function () {
-    Route::get('/businesses/{business}/catalog', [ProductController::class, 'publicCatalog'])
-        ->name('business_catalog');
-});
-
 Route::middleware(['auth:sanctum'])->prefix('v1')->group(function () {
 
-    // Seller catalog (US-SEL-01..08)
-    Route::prefix('products')->name('products.')->group(function () {        Route::get('/', [ProductController::class, 'index'])->name('index');
+    // Seller catalog (US-SEL-01..08). Public product search owns `GET /products`
+    // and `GET /products/{id}` (Search module, §11.1); the seller's own listing
+    // — all statuses — lives under `/products/mine`.
+    Route::prefix('products')->name('products.')->group(function () {
+        Route::get('/mine', [ProductController::class, 'index'])->name('mine');
+        Route::get('/mine/{product}', [ProductController::class, 'show'])->name('mine.show');
         Route::post('/', [ProductController::class, 'store'])->name('store');
-        Route::get('/{product}', [ProductController::class, 'show'])->name('show');
         Route::patch('/{product}', [ProductController::class, 'update'])->name('update');
         Route::delete('/{product}', [ProductController::class, 'destroy'])->name('destroy');
         Route::post('/{product}/duplicate', [ProductController::class, 'duplicate'])->name('duplicate');

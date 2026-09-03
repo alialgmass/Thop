@@ -5,16 +5,17 @@ namespace Modules\Catalog\Http\Controllers;
 use App\Models\User;
 use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
 use Modules\Catalog\Actions\CreateProduct;
-use Modules\Catalog\Actions\PublishProduct;
+use Modules\Catalog\Enums\ProductStatus;
 use Modules\Catalog\Http\Requests\StoreProductRequest;
 use Modules\Catalog\Http\Requests\UpdateProductRequest;
 use Modules\Catalog\Http\Requests\UpdateProductStatusRequest;
-use Modules\Catalog\Http\Resources\ProductCardResource;
 use Modules\Catalog\Http\Resources\ProductResource;
 use Modules\Catalog\Models\Product;
 use Modules\Core\Http\Controllers\Controller;
 use Modules\Core\Support\Api\ApiResponse;
+use Modules\Subscriptions\Services\EntitlementService;
 
 class ProductController extends Controller
 {
@@ -26,10 +27,10 @@ class ProductController extends Controller
      * This is the seller catalog view (US-SEL-02). Public search across all
      * sellers is Phase 4; this endpoint exposes only the owner's products.
      */
-    public function index(): JsonResponse
+    public function index(Request $request): JsonResponse
     {
         /** @var User $user */
-        $user = auth()->user();
+        $user = $request->user();
 
         $products = Product::query()
             ->where('business_account_id', $user->businessAccount->getKey())
@@ -37,8 +38,10 @@ class ProductController extends Controller
             ->latest()
             ->paginate();
 
+        $payload = ProductResource::collection($products)->toResponse($request)->getData(true);
+
         return $this
-            ->apiBody(['products' => ProductResource::collection($products)])
+            ->apiBody(['products' => $payload])
             ->apiResponse();
     }
 
@@ -74,24 +77,6 @@ class ProductController extends Controller
             ->apiResponse();
     }
 
-    /**
-     * Public, buyer-facing catalog for a single business (Minimal R1 build).
-     * Only published products are returned, paginated; no auth required.
-     */
-    public function publicCatalog(string $business): JsonResponse
-    {
-        $products = Product::query()
-            ->where('business_account_id', $business)
-            ->publishedVisible()
-            ->with(['fabricType', 'material', 'governorate', 'colors', 'media'])
-            ->latest()
-            ->paginate();
-
-        return $this
-            ->apiBody(['products' => ProductCardResource::collection($products)])
-            ->apiResponse();
-    }
-
     public function update(UpdateProductRequest $request, Product $product): JsonResponse
     {
         $this->authorize('update', $product);
@@ -123,7 +108,7 @@ class ProductController extends Controller
 
         $product->delete();
 
-        app(\Modules\Subscriptions\Services\EntitlementService::class)
+        app(EntitlementService::class)
             ->decrementUsage($business, 'product_count');
 
         return $this
@@ -139,7 +124,7 @@ class ProductController extends Controller
             'status',
             'rejection_reason',
         ])->fill([
-            'status' => \Modules\Catalog\Enums\ProductStatus::Draft,
+            'status' => ProductStatus::Draft,
         ]);
 
         $newProduct->save();
@@ -153,7 +138,7 @@ class ProductController extends Controller
             );
         }
 
-        app(\Modules\Subscriptions\Services\EntitlementService::class)
+        app(EntitlementService::class)
             ->incrementUsage($product->businessAccount, 'product_count');
 
         return $this
@@ -167,7 +152,7 @@ class ProductController extends Controller
     {
         $this->authorize('updateStatus', $product);
 
-        $status = \Modules\Catalog\Enums\ProductStatus::from($request->input('status'));
+        $status = ProductStatus::from($request->input('status'));
 
         $product->forceFill(['status' => $status])->save();
 

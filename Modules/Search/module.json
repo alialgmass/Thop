@@ -1,0 +1,11 @@
+{
+    "name": "Search",
+    "alias": "search",
+    "description": "MySQL-backed product & supplier discovery, featured ranking, zero-result logging (US-SRC-01..11).",
+    "keywords": [],
+    "priority": 0,
+    "providers": [
+        "Modules\\Search\\Providers\\SearchServiceProvider"
+    ],
+    "files": []
+}

@@ -1,0 +1,23 @@
+{
+    "name": "thob/search",
+    "description": "Search module - product & supplier discovery, featured ranking, zero-result logging (US-SRC-01..11)",
+    "authors": [],
+    "extra": {
+        "laravel": {
+            "providers": [],
+            "aliases": {}
+        }
+    },
+    "autoload": {
+        "psr-4": {
+            "Modules\\Search\\": "/",
+            "Modules\\Search\\Database\\Factories\\": "database/factories/",
+            "Modules\\Search\\Database\\Seeders\\": "database/seeders/"
+        }
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "Modules\\Search\\Tests\\": "tests/"
+        }
+    }
+}

@@ -10,8 +10,8 @@ use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Modules\Businesses\Models\BusinessAccount;
-use Modules\Catalog\Enums\ProductStatus;
 use Modules\Catalog\Database\Factories\ProductFactory;
+use Modules\Catalog\Enums\ProductStatus;
 use Modules\Core\Exceptions\ApiException\ExceptionResponse;
 use Modules\Core\Support\Traits\HasCreatedByColumn;
 use Modules\Core\Support\Traits\HasUpdatedByColumn;
@@ -171,5 +171,22 @@ class Product extends Model
     public function scopePublishedVisible(Builder $query): void
     {
         $query->where('status', ProductStatus::Published);
+    }
+
+    /**
+     * The single definition of "a buyer may see this product" (BR-SRC-02):
+     * published, not soft-deleted, and owned by a business whose account is
+     * not suspended. Both global search and the per-supplier catalog use this.
+     *
+     * @param  Builder<static>  $query
+     */
+    public function scopeBuyerVisible(Builder $query): void
+    {
+        $query->where('status', ProductStatus::Published)
+            ->whereHas('businessAccount', function ($business): void {
+                $business->whereHas('owner', function ($owner): void {
+                    $owner->where('status', '!=', 'suspended');
+                });
+            });
     }
 }
