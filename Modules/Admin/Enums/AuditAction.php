@@ -10,4 +10,8 @@ enum AuditAction: string
 {
     case VerificationApproved = 'verification.approved';
     case VerificationRejected = 'verification.rejected';
+
+    case ProductApproved = 'product.approved';
+    case ProductRejected = 'product.rejected';
+    case ProductHidden = 'product.hidden';
 }

@@ -1,0 +1,11 @@
+{
+    "name": "Catalog",
+    "alias": "catalog",
+    "description": "Seller products, media, bulk import and review queue (US-SEL-01..11).",
+    "keywords": [],
+    "priority": 0,
+    "providers": [
+        "Modules\\Catalog\\Providers\\CatalogServiceProvider"
+    ],
+    "files": []
+}

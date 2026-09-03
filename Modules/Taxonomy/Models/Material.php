@@ -2,4 +2,16 @@
 
 namespace Modules\Taxonomy\Models;
 
-class Material extends TaxonomyTerm {}
+use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Modules\Taxonomy\Database\Factories\MaterialFactory;
+
+class Material extends TaxonomyTerm
+{
+    /** @use HasFactory<MaterialFactory> */
+    use HasFactory;
+
+    protected static function newFactory(): MaterialFactory
+    {
+        return MaterialFactory::new();
+    }
+}

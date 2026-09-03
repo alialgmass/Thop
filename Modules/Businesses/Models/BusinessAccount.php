@@ -15,6 +15,7 @@ use Modules\Core\Support\Traits\HasUpdatedByColumn;
 use Modules\Subscriptions\Models\Subscription;
 use Modules\Taxonomy\Models\Governorate;
 use Modules\Verification\Models\VerificationRequest;
+use Modules\Catalog\Models\Product;
 
 /**
  * @property int $id
@@ -110,5 +111,13 @@ class BusinessAccount extends Model
     public function latestVerificationRequest(): HasOne
     {
         return $this->hasOne(VerificationRequest::class)->latestOfMany();
+    }
+
+    /**
+     * @return HasMany<Product, $this>
+     */
+    public function products(): HasMany
+    {
+        return $this->hasMany(Product::class);
     }
 }
