@@ -20,12 +20,10 @@ class ProductSearchIndexer
             return;
         }
 
-        $product->search_text = $this->normalizer->normalize(
-            trim(implode(' ', array_filter([
-                $product->name_ar,
-                $product->name_en,
-                $product->description,
-            ]))),
-        );
+        $product->search_text = $this->normalizer->normalizeParts([
+            $product->name_ar,
+            $product->name_en,
+            $product->description,
+        ]);
     }
 }

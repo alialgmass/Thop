@@ -119,7 +119,8 @@
 - **`sort=supplier_rating`** بيتدهور لـ "الموثّق الأول ثم الأحدث" — مفيش نظام تقييم موردين في R1 (Implementation Assumption).
 - **فلتر "specialty" للموردين** = عمود `business_accounts.activity` النصّي الحر عبر عمود `search_text` منرمَل — مفيش taxonomy تخصصات (Implementation Assumption).
 - **Zero-result logging** بيتسجّل فقط عند نتيجة صفر بالظبط (عتبة "low-result" في السبيك اتسابت 0 للـ phase دي). فشل التسجيل مبيكسرش الرد.
-- **Featured boost** = إعادة ترتيب ثابتة داخل الصفحة فقط (مش بيسحب عنصر عبر حدود الصفحات)، وزن ثابت في الكود (مش admin-editable لسه). مبني على مفاتيح `featured_products` / `featured_supplier` البوليانية فقط — `search_priority` المتدرّج مش موصّل (مش موجود في seeder).
+- **Featured boost** = تعديل موضعي محدود: العنصر المميز بيطلع لفوق بحد أقصى `FeaturedRanker::BOOST_POSITIONS` (=12) مركز داخل الصفحة، مبيشيلش عنصر عادي ومبيقفزش مسافة عشوائية. وزن ثابت في الكود (مش admin-editable لسه). مبني على مفاتيح `featured_products` / `featured_supplier` البوليانية فقط — `search_priority` المتدرّج مش موصّل (مش موجود في seeder). مطبّق على sort `relevance`/`newest` بس (مش على ترتيب السعر).
+- **`GET /api/v1/businesses` + `/businesses/{id}/catalog`** اتسجّلوا في Search module (مش Businesses) عشان كل رو/تات البحث تفضل في مكان واحد؛ السبيك اقترح Businesses module بس ده انحراف مقصود موثّق (Search بيملك الـ controller والـ service).
 - **Open Decision #5**: منتجات البيزنس غير الموثّق بتظهر في البحث (تتميّز فقط بغياب البادج). `Product::scopeBuyerVisible` مكتوبة عشان قلبها لـ "الموثّق فقط" يبقى سطر واحد.
 - **عمود `search_text`** على `products` و`business_accounts` (منرمَل)، بيتزامن عبر observers في Search module. مايجريشن Phase 4 بيبدّل MySQL FULLTEXT من `(name_ar,name_en)` لـ `search_text` وبيضيف FULLTEXT على `business_accounts`؛ كله no-op على SQLite.
 - **اختبار FULLTEXT الحقيقي + هدف p95<2s عند 100k منتج (PRF-NFR-01)**: فحص MySQL يدوي/CI مؤجّل — مش تيست SQLite، تماشيًا مع سياسة "المايجريشنز MySQL-compatible، التيستات على SQLite".

@@ -21,9 +21,7 @@ class SupplierCardResource extends JsonResource
             'company_name' => $this->company_name,
             'activity' => $this->activity,
             'governorate' => $this->whenLoaded('governorate', fn () => $this->governorate?->localizedName()),
-            'governorate_id' => $this->governorate_id,
             'verified' => $this->isVerified(),
-            'verification_status' => $this->verification_status->value,
             'featured' => (bool) ($this->featured ?? false),
         ];
     }

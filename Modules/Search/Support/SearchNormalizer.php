@@ -60,34 +60,31 @@ class SearchNormalizer
 
     public function normalize(?string $value): string
     {
-        if ($value === null) {
+        if ($value === null || trim($value) === '') {
             return '';
         }
 
-        $value = trim($value);
-
-        if ($value === '') {
-            return '';
-        }
-
-        // Strip Arabic diacritics and tatweel.
-        $value = preg_replace('/['.self::ARABIC_MARKS.']/u', '', $value) ?? $value;
-
-        // Apply Arabic letter folds.
+        $value = preg_replace('/['.self::ARABIC_MARKS.']/u', '', trim($value)) ?? $value;
         $value = strtr($value, self::ARABIC_FOLDS);
-
-        // Lowercase (affects Latin; harmless for Arabic).
         $value = mb_strtolower($value, 'UTF-8');
-
-        // Collapse any run of whitespace to a single space.
         $value = preg_replace('/\s+/u', ' ', $value) ?? $value;
 
-        // Apply the English synonym map token by token.
         $tokens = array_map(
             fn (string $token): string => self::SYNONYMS[$token] ?? $token,
             explode(' ', $value),
         );
 
         return trim(implode(' ', $tokens));
+    }
+
+    /**
+     * Normalize a record's searchable parts (bilingual name, description, …)
+     * into the single string stored in a `search_text` column.
+     *
+     * @param  array<int, string|null>  $parts
+     */
+    public function normalizeParts(array $parts): string
+    {
+        return $this->normalize(trim(implode(' ', array_filter($parts))));
     }
 }

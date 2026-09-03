@@ -169,6 +169,80 @@ class ProductSearchTest extends TestCase
     }
 
     #[Test]
+    public function color_and_width_filters_narrow_the_result_set(): void
+    {
+        $blue = Color::factory()->create();
+        $red = Color::factory()->create();
+
+        $wanted = $this->publishedProduct(['width_cm' => 150]);
+        $wanted->colors()->attach($blue->id);
+
+        $wrongColor = $this->publishedProduct(['width_cm' => 150]);
+        $wrongColor->colors()->attach($red->id);
+
+        $wrongWidth = $this->publishedProduct(['width_cm' => 300]);
+        $wrongWidth->colors()->attach($blue->id);
+
+        $this->getJson('/api/v1/products?'.http_build_query([
+            'filters' => ['color_id' => [$blue->id], 'width_cm_min' => 100, 'width_cm_max' => 200],
+        ]))
+            ->assertOk()
+            ->assertJsonCount(1, 'body.products.data')
+            ->assertJsonPath('body.products.data.0.id', $wanted->id);
+    }
+
+    #[Test]
+    public function availability_filter_excludes_out_of_stock_products(): void
+    {
+        $inStock = $this->publishedProduct(['quantity_available' => 20]);
+        $this->publishedProduct(['quantity_available' => 0]);
+
+        $this->getJson('/api/v1/products?filters[availability]=1')
+            ->assertOk()
+            ->assertJsonCount(1, 'body.products.data')
+            ->assertJsonPath('body.products.data.0.id', $inStock->id);
+    }
+
+    #[Test]
+    public function sort_newest_returns_the_most_recent_first(): void
+    {
+        $old = $this->publishedProduct();
+        $old->update(['created_at' => now()->subDays(3)]);
+        $new = $this->publishedProduct();
+
+        $this->getJson('/api/v1/products?sort=newest')
+            ->assertOk()
+            ->assertJsonPath('body.products.data.0.id', $new->id)
+            ->assertJsonPath('body.products.data.1.id', $old->id);
+    }
+
+    #[Test]
+    public function sort_supplier_rating_degrades_to_verified_first(): void
+    {
+        $verified = $this->makeBusiness();
+        $verified->update(['verification_status' => 'verified']);
+        $verifiedProduct = $this->publishedProduct([], $verified);
+        $verifiedProduct->update(['created_at' => now()->subDays(2)]);
+
+        $plainNewer = $this->publishedProduct();
+
+        $this->getJson('/api/v1/products?sort=supplier_rating')
+            ->assertOk()
+            ->assertJsonPath('body.products.data.0.id', $verifiedProduct->id)
+            ->assertJsonPath('body.products.data.1.id', $plainNewer->id);
+    }
+
+    #[Test]
+    public function an_unknown_filter_id_yields_an_empty_result_not_an_error(): void
+    {
+        $this->publishedProduct();
+
+        $this->getJson('/api/v1/products?filters[fabric_type_id]=999999')
+            ->assertOk()
+            ->assertJsonCount(0, 'body.products.data');
+    }
+
+    #[Test]
     public function sort_by_price_orders_ascending_and_keeps_filters(): void
     {
         $gov = Governorate::factory()->create();

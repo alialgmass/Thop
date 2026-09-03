@@ -9,6 +9,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Modules\Auth\Enums\UserStatus;
 use Modules\Businesses\Models\BusinessAccount;
 use Modules\Catalog\Database\Factories\ProductFactory;
 use Modules\Catalog\Enums\ProductStatus;
@@ -185,7 +186,7 @@ class Product extends Model
         $query->where('status', ProductStatus::Published)
             ->whereHas('businessAccount', function ($business): void {
                 $business->whereHas('owner', function ($owner): void {
-                    $owner->where('status', '!=', 'suspended');
+                    $owner->where('status', '!=', UserStatus::Suspended->value);
                 });
             });
     }

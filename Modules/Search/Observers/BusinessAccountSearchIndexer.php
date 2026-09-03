@@ -19,8 +19,9 @@ class BusinessAccountSearchIndexer
             return;
         }
 
-        $business->search_text = $this->normalizer->normalize(
-            trim(implode(' ', array_filter([$business->company_name, $business->activity]))),
-        );
+        $business->search_text = $this->normalizer->normalizeParts([
+            $business->company_name,
+            $business->activity,
+        ]);
     }
 }

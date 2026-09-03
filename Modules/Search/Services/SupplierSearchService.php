@@ -3,9 +3,10 @@
 namespace Modules\Search\Services;
 
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
-use Illuminate\Database\Eloquent\Builder;
-use Illuminate\Support\Facades\DB;
+use Modules\Auth\Enums\UserStatus;
 use Modules\Businesses\Models\BusinessAccount;
+use Modules\Search\Support\FullTextMatch;
+use Modules\Search\Support\PerPage;
 use Modules\Search\Support\SearchNormalizer;
 
 /**
@@ -16,12 +17,9 @@ use Modules\Search\Support\SearchNormalizer;
  */
 class SupplierSearchService
 {
-    private const MAX_PER_PAGE = 50;
-
-    private const DEFAULT_PER_PAGE = 20;
-
     public function __construct(
         private SearchNormalizer $normalizer,
+        private FullTextMatch $fullText,
         private FeaturedRanker $ranker,
     ) {}
 
@@ -31,12 +29,11 @@ class SupplierSearchService
     public function search(array $params): LengthAwarePaginator
     {
         $term = $this->normalizer->normalize($params['search'] ?? null);
+        $filters = $params['filters'] ?? [];
 
         $query = BusinessAccount::query()
             ->with(['governorate'])
-            ->whereHas('owner', fn ($owner) => $owner->where('status', '!=', 'suspended'));
-
-        $filters = $params['filters'] ?? [];
+            ->whereHas('owner', fn ($owner) => $owner->where('status', '!=', UserStatus::Suspended->value));
 
         if (! empty($filters['governorate_id'])) {
             $query->where('governorate_id', $filters['governorate_id']);
@@ -47,17 +44,16 @@ class SupplierSearchService
         }
 
         if (! empty($filters['specialty'])) {
-            $specialty = $this->normalizer->normalize($filters['specialty']);
-            $query->where('search_text', 'like', '%'.$this->escapeLike($specialty).'%');
+            $this->fullText->constrain($query, 'search_text', $this->normalizer->normalize($filters['specialty']));
         }
 
         if ($term !== '') {
-            $this->applyFreeText($query, $term);
+            $this->fullText->constrain($query, 'search_text', $term);
         }
 
-        $query->orderByDesc('company_name')->orderByDesc('id');
+        $query->orderBy('company_name')->orderByDesc('id');
 
-        $paginator = $query->paginate($this->resolvePerPage($params['per_page'] ?? null))->withQueryString();
+        $paginator = $query->paginate(PerPage::resolve($params['per_page'] ?? null))->withQueryString();
 
         $paginator->setCollection(
             $this->ranker->rank(
@@ -69,35 +65,5 @@ class SupplierSearchService
         );
 
         return $paginator;
-    }
-
-    /**
-     * @param  Builder<BusinessAccount>  $query
-     */
-    private function applyFreeText(Builder $query, string $term): void
-    {
-        if (DB::getDriverName() === 'mysql') {
-            $tokens = array_filter(explode(' ', preg_replace('/[+\-><()~*"@]+/', ' ', $term) ?? $term));
-            $boolean = implode(' ', array_map(fn (string $t): string => '+'.$t.'*', $tokens));
-            $query->whereRaw('MATCH(search_text) AGAINST (? IN BOOLEAN MODE)', [$boolean]);
-
-            return;
-        }
-
-        foreach (explode(' ', $term) as $token) {
-            $query->where('search_text', 'like', '%'.$this->escapeLike($token).'%');
-        }
-    }
-
-    private function resolvePerPage(mixed $perPage): int
-    {
-        $value = (int) $perPage;
-
-        return $value < 1 ? self::DEFAULT_PER_PAGE : min($value, self::MAX_PER_PAGE);
-    }
-
-    private function escapeLike(string $value): string
-    {
-        return str_replace(['\\', '%', '_'], ['\\\\', '\\%', '\\_'], $value);
     }
 }

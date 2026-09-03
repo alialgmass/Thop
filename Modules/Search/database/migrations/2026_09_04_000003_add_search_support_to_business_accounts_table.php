@@ -49,9 +49,7 @@ return new class extends Migration
         DB::table('business_accounts')->orderBy('id')->chunkById(200, function ($rows) use ($normalizer): void {
             foreach ($rows as $row) {
                 DB::table('business_accounts')->where('id', $row->id)->update([
-                    'search_text' => $normalizer->normalize(
-                        trim(implode(' ', array_filter([$row->company_name, $row->activity]))),
-                    ),
+                    'search_text' => $normalizer->normalizeParts([$row->company_name, $row->activity]),
                 ]);
             }
         });

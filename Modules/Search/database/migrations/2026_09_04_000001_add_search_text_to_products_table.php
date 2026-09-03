@@ -55,9 +55,7 @@ return new class extends Migration
         DB::table('products')->orderBy('id')->chunkById(200, function ($rows) use ($normalizer): void {
             foreach ($rows as $row) {
                 DB::table('products')->where('id', $row->id)->update([
-                    'search_text' => $normalizer->normalize(
-                        trim(implode(' ', array_filter([$row->name_ar, $row->name_en, $row->description]))),
-                    ),
+                    'search_text' => $normalizer->normalizeParts([$row->name_ar, $row->name_en, $row->description]),
                 ]);
             }
         });

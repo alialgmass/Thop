@@ -9,22 +9,26 @@ use Modules\Subscriptions\Services\EntitlementService;
 /**
  * Applies the featured ranking boost (US-SRC-10, BR-SRC-01).
  *
- * The boost is deliberately bounded: it is a stable partition of the already
- * fetched page — featured items move ahead of non-featured items *within the
- * page*, never removing a non-featured item and never pulling an item across
- * page boundaries. Whether a business is featured is resolved server-side from
- * its active subscription every request (a lapsed/downgraded plan loses the
- * boost with no code change), and every row is tagged with a truthful
- * `featured` flag so the client can label it.
+ * The boost is a bounded positional adjustment: a featured row moves up by at
+ * most {@see self::BOOST_POSITIONS} places within the already-fetched page. It
+ * never removes a non-featured row and never lets a featured row jump an
+ * arbitrary distance — a much higher-relevance organic row still wins. Whether
+ * a business is featured is resolved server-side from its active subscription
+ * every request (a lapsed/downgraded plan loses the boost with no code change),
+ * and every row is tagged with a truthful `featured` flag so the client can
+ * label it.
  */
 class FeaturedRanker
 {
+    /** Maximum places a featured row may climb within a page. */
+    public const BOOST_POSITIONS = 12;
+
     public function __construct(private EntitlementService $entitlements) {}
 
     /**
      * @template TModel of \Illuminate\Database\Eloquent\Model
      *
-     * @param  Collection<int, TModel>  $items
+     * @param  Collection<int, TModel>  $items  in base-sort order
      * @param  bool  $applyBoost  re-order within the page (false for price sorts — flag only)
      * @param  (callable(TModel): ?BusinessAccount)|null  $businessResolver
      * @return Collection<int, TModel>
@@ -52,7 +56,12 @@ class FeaturedRanker
             return $items;
         }
 
-        // PHP 8's sort is stable, so non-featured relative order is preserved.
-        return $items->sortByDesc(fn ($item): bool => (bool) $item->featured)->values();
+        return $items
+            ->values()
+            ->sortBy(
+                fn ($item, int $position): int => $position - ($item->featured ? self::BOOST_POSITIONS : 0),
+                SORT_NUMERIC,
+            )
+            ->values();
     }
 }

@@ -6,28 +6,28 @@ use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\DB;
 use Modules\Catalog\Models\Product;
+use Modules\Search\Support\FullTextMatch;
+use Modules\Search\Support\PerPage;
 use Modules\Search\Support\SearchNormalizer;
 
 /**
  * MySQL-backed product discovery (US-SRC-01..04, §13). This is the one seam a
  * future dedicated engine (Meilisearch/OpenSearch) would replace — controllers
- * only pass validated params in and get a paginator out.
- *
- * Free-text matching branches on the driver: MySQL uses the FULLTEXT index on
- * `search_text`; SQLite (tests) falls back to LIKE over the same normalized
- * column. Both sides compare {@see SearchNormalizer}-normalized text so common
- * Arabic/English spelling variants still match.
+ * only pass validated params in and get a paginator out. Free-text matching and
+ * its driver branch live in {@see FullTextMatch}; common Arabic/English
+ * spelling variants match because both the stored `search_text` column and the
+ * query term are {@see SearchNormalizer}-normalized.
  */
 class ProductSearchService
 {
     private const SORTS = ['relevance', 'price_asc', 'price_desc', 'newest', 'supplier_rating'];
 
-    private const MAX_PER_PAGE = 50;
-
-    private const DEFAULT_PER_PAGE = 20;
+    /** Sorts the featured boost re-orders within a page (BR-SRC-01). */
+    private const BOOSTED_SORTS = ['relevance', 'newest'];
 
     public function __construct(
         private SearchNormalizer $normalizer,
+        private FullTextMatch $fullText,
         private FeaturedRanker $ranker,
     ) {}
 
@@ -37,7 +37,6 @@ class ProductSearchService
     public function search(array $params, ?int $businessAccountId = null): LengthAwarePaginator
     {
         $term = $this->normalizer->normalize($params['search'] ?? null);
-        $hasTerm = $term !== '';
 
         $query = Product::query()
             ->buyerVisible()
@@ -49,22 +48,20 @@ class ProductSearchService
 
         $this->applyFilters($query, $params['filters'] ?? []);
 
-        if ($hasTerm) {
-            $this->applyFreeText($query, $term);
+        if ($term !== '') {
+            $this->fullText->constrain($query, 'search_text', $term);
         }
 
-        $sort = $this->resolveSort($params['sort'] ?? null, $hasTerm);
+        $sort = $this->resolveSort($params['sort'] ?? null, $term !== '');
         $this->applySort($query, $sort, $term);
 
-        $perPage = $this->resolvePerPage($params['per_page'] ?? null);
-
-        $paginator = $query->paginate($perPage)->withQueryString();
+        $paginator = $query->paginate(PerPage::resolve($params['per_page'] ?? null))->withQueryString();
 
         $paginator->setCollection(
             $this->ranker->rank(
                 $paginator->getCollection(),
                 'featured_products',
-                applyBoost: in_array($sort, ['relevance', 'newest'], true),
+                applyBoost: in_array($sort, self::BOOSTED_SORTS, true),
             ),
         );
 
@@ -85,18 +82,14 @@ class ProductSearchService
 
         if (! empty($filters['color_id'])) {
             $colorIds = array_filter((array) $filters['color_id']);
-            $query->whereHas('colors', fn ($c) => $c->whereIn('colors.id', $colorIds));
+            $query->whereHas('colors', fn ($colors) => $colors->whereIn('colors.id', $colorIds));
         }
 
         $this->applyRange($query, 'width_cm', $filters['width_cm_min'] ?? null, $filters['width_cm_max'] ?? null);
         $this->applyRange($query, 'price', $filters['price_min'] ?? null, $filters['price_max'] ?? null);
 
-        if (isset($filters['availability'])) {
-            $available = filter_var($filters['availability'], FILTER_VALIDATE_BOOLEAN);
-
-            if ($available) {
-                $query->where('quantity_available', '>', 0);
-            }
+        if (isset($filters['availability']) && filter_var($filters['availability'], FILTER_VALIDATE_BOOLEAN)) {
+            $query->where('quantity_available', '>', 0);
         }
 
         if (isset($filters['moq_max']) && $filters['moq_max'] !== '') {
@@ -115,23 +108,6 @@ class ProductSearchService
 
         if ($max !== null && $max !== '') {
             $query->where($column, '<=', $max);
-        }
-    }
-
-    /**
-     * @param  Builder<Product>  $query
-     */
-    private function applyFreeText(Builder $query, string $term): void
-    {
-        if (DB::getDriverName() === 'mysql') {
-            $query->whereRaw('MATCH(search_text) AGAINST (? IN BOOLEAN MODE)', [$this->booleanTerm($term)]);
-
-            return;
-        }
-
-        // SQLite / other: AND of per-token LIKE over the normalized column.
-        foreach (explode(' ', $term) as $token) {
-            $query->where('search_text', 'like', '%'.$this->escapeLike($token).'%');
         }
     }
 
@@ -160,23 +136,14 @@ class ProductSearchService
             return;
         }
 
-        if (DB::getDriverName() === 'mysql') {
-            $query->orderByRaw('MATCH(search_text) AGAINST (? IN BOOLEAN MODE) DESC', [$this->booleanTerm($term)])
-                ->orderByDesc('id');
-
-            return;
-        }
-
-        // SQLite: prefix hits first, then newest.
-        $query->orderByRaw('CASE WHEN search_text LIKE ? THEN 0 ELSE 1 END', [$this->escapeLike($term).'%'])
-            ->orderByDesc('created_at')
-            ->orderByDesc('id');
+        $this->fullText->orderByRelevance($query, 'search_text', $term);
+        $query->orderByDesc('products.created_at')->orderByDesc('products.id');
     }
 
     /**
      * No supplier-rating feature exists in R1 (no ratings table) — degrade to
      * "verified suppliers first, then newest". Recorded as an Implementation
-     * Assumption.
+     * Assumption in docs/PROGRESS.md.
      *
      * @param  Builder<Product>  $query
      */
@@ -196,32 +163,5 @@ class ProductSearchService
         }
 
         return $hasTerm ? 'relevance' : 'newest';
-    }
-
-    private function resolvePerPage(mixed $perPage): int
-    {
-        $value = (int) $perPage;
-
-        if ($value < 1) {
-            return self::DEFAULT_PER_PAGE;
-        }
-
-        return min($value, self::MAX_PER_PAGE);
-    }
-
-    /**
-     * Turn a normalized term into a safe FULLTEXT boolean-mode expression:
-     * every token becomes a required prefix match, operators are stripped.
-     */
-    private function booleanTerm(string $term): string
-    {
-        $tokens = array_filter(explode(' ', preg_replace('/[+\-><()~*"@]+/', ' ', $term) ?? $term));
-
-        return implode(' ', array_map(fn (string $t): string => '+'.$t.'*', $tokens));
-    }
-
-    private function escapeLike(string $value): string
-    {
-        return str_replace(['\\', '%', '_'], ['\\\\', '\\%', '\\_'], $value);
     }
 }

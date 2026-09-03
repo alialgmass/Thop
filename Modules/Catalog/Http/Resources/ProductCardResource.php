@@ -4,6 +4,7 @@ namespace Modules\Catalog\Http\Resources;
 
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
+use Illuminate\Support\Facades\Storage;
 
 /**
  * Public-facing product card for search results and per-supplier catalogs
@@ -36,8 +37,6 @@ class ProductCardResource extends JsonResource
             'material' => $this->whenLoaded('material', fn () => $this->material?->localizedName()),
             'governorate' => $this->whenLoaded('governorate', fn () => $this->governorate?->localizedName()),
             'colors' => $this->whenLoaded('colors', fn () => $this->colors->pluck('id', 'name_en')),
-            'price_tiers' => ProductPriceTierResource::collection($this->whenLoaded('priceTiers')),
-            'media' => ProductMediaResource::collection($this->whenLoaded('media')),
             'primary_image' => $this->whenLoaded('media', fn () => $this->primaryImageUrl()),
             'supplier' => $this->whenLoaded('businessAccount', fn () => [
                 'id' => $this->businessAccount->id,
@@ -51,10 +50,6 @@ class ProductCardResource extends JsonResource
     {
         $image = $this->media->firstWhere('type', 'image');
 
-        if ($image === null) {
-            return null;
-        }
-
-        return (new ProductMediaResource($image))->resolve()['url'] ?? null;
+        return $image === null ? null : Storage::disk($image->disk)->url($image->path);
     }
 }
