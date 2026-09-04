@@ -7,5 +7,7 @@
     "Core": true,
     "Subscriptions": true,
     "Catalog": true,
-    "Search": true
+    "Search": true,
+    "Favorites": true,
+    "Comparison": true
 }

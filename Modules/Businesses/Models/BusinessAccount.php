@@ -3,19 +3,21 @@
 namespace Modules\Businesses\Models;
 
 use App\Models\User;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
+use Modules\Auth\Enums\UserStatus;
 use Modules\Businesses\Database\Factories\BusinessAccountFactory;
 use Modules\Businesses\Enums\VerificationStatus;
+use Modules\Catalog\Models\Product;
 use Modules\Core\Support\Traits\HasCreatedByColumn;
 use Modules\Core\Support\Traits\HasUpdatedByColumn;
 use Modules\Subscriptions\Models\Subscription;
 use Modules\Taxonomy\Models\Governorate;
 use Modules\Verification\Models\VerificationRequest;
-use Modules\Catalog\Models\Product;
 
 /**
  * @property int $id
@@ -79,6 +81,18 @@ class BusinessAccount extends Model
     public function owner(): BelongsTo
     {
         return $this->belongsTo(User::class, 'user_id');
+    }
+
+    /**
+     * Business accounts whose owning user account is not suspended — the shared
+     * "this supplier is reachable" gate for buyer-facing search, comparison and
+     * catalog visibility.
+     *
+     * @param  Builder<static>  $query
+     */
+    public function scopeActiveAccount(Builder $query): void
+    {
+        $query->whereHas('owner', fn (Builder $owner) => $owner->where('status', '!=', UserStatus::Suspended->value));
     }
 
     /**

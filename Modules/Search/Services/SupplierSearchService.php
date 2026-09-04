@@ -3,7 +3,6 @@
 namespace Modules\Search\Services;
 
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
-use Modules\Auth\Enums\UserStatus;
 use Modules\Businesses\Models\BusinessAccount;
 use Modules\Search\Support\FullTextMatch;
 use Modules\Search\Support\PerPage;
@@ -33,7 +32,7 @@ class SupplierSearchService
 
         $query = BusinessAccount::query()
             ->with(['governorate'])
-            ->whereHas('owner', fn ($owner) => $owner->where('status', '!=', UserStatus::Suspended->value));
+            ->activeAccount();
 
         if (! empty($filters['governorate_id'])) {
             $query->where('governorate_id', $filters['governorate_id']);

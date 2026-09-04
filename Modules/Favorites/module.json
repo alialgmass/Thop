@@ -1,0 +1,11 @@
+{
+    "name": "Favorites",
+    "alias": "favorites",
+    "description": "Saved products and suppliers, polymorphic, no duplicates (US-SRC-08, US-BUY-02, BR-FAV-01).",
+    "keywords": [],
+    "priority": 0,
+    "providers": [
+        "Modules\\Favorites\\Providers\\FavoritesServiceProvider"
+    ],
+    "files": []
+}

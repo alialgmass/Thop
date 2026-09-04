@@ -1,0 +1,21 @@
+{
+    "name": "thob/comparison",
+    "description": "Comparison module - side-by-side compare, cap 4 (US-SRC-09, US-BUY-05)",
+    "authors": [],
+    "extra": {
+        "laravel": {
+            "providers": [],
+            "aliases": {}
+        }
+    },
+    "autoload": {
+        "psr-4": {
+            "Modules\\Comparison\\": "/"
+        }
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "Modules\\Comparison\\Tests\\": "tests/"
+        }
+    }
+}

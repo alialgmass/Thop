@@ -1,0 +1,23 @@
+{
+    "name": "thob/favorites",
+    "description": "Favorites module - saved products and suppliers (US-SRC-08, US-BUY-02)",
+    "authors": [],
+    "extra": {
+        "laravel": {
+            "providers": [],
+            "aliases": {}
+        }
+    },
+    "autoload": {
+        "psr-4": {
+            "Modules\\Favorites\\": "/",
+            "Modules\\Favorites\\Database\\Factories\\": "database/factories/",
+            "Modules\\Favorites\\Database\\Seeders\\": "database/seeders/"
+        }
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "Modules\\Favorites\\Tests\\": "tests/"
+        }
+    }
+}
