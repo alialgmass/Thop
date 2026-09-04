@@ -4,10 +4,7 @@ namespace Modules\Favorites\Http\Resources;
 
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
-use Modules\Businesses\Models\BusinessAccount;
-use Modules\Catalog\Http\Resources\ProductCardResource;
-use Modules\Catalog\Models\Product;
-use Modules\Search\Http\Resources\SupplierCardResource;
+use Modules\Favorites\Enums\FavoritableType;
 
 /**
  * One saved favorite plus a card view of its target, so the client can render
@@ -25,16 +22,10 @@ class FavoriteResource extends JsonResource
             'type' => $this->favoritable_type,
             'favoritable_id' => $this->favoritable_id,
             'created_at' => $this->created_at,
-            'item' => $this->whenLoaded('favoritable', fn () => $this->cardFor($this->favoritable)),
+            'item' => $this->whenLoaded(
+                'favoritable',
+                fn () => FavoritableType::from($this->favoritable_type)->card($this->favoritable),
+            ),
         ];
-    }
-
-    private function cardFor(mixed $favoritable): ?JsonResource
-    {
-        return match (true) {
-            $favoritable instanceof Product => new ProductCardResource($favoritable),
-            $favoritable instanceof BusinessAccount => new SupplierCardResource($favoritable),
-            default => null,
-        };
     }
 }

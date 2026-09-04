@@ -4,9 +4,9 @@ namespace Modules\Favorites\Providers;
 
 use Illuminate\Database\Eloquent\Relations\Relation;
 use Illuminate\Support\Facades\Gate;
+use Modules\Favorites\Enums\FavoritableType;
 use Modules\Favorites\Models\Favorite;
 use Modules\Favorites\Policies\FavoritePolicy;
-use Modules\Favorites\Support\Favoritable;
 use Nwidart\Modules\Support\ModuleServiceProvider;
 
 class FavoritesServiceProvider extends ModuleServiceProvider
@@ -30,7 +30,7 @@ class FavoritesServiceProvider extends ModuleServiceProvider
 
         // Store short aliases ("product"/"supplier") in favoritable_type rather
         // than FQCNs. Non-enforcing so other polymorphic models keep FQCNs.
-        Relation::morphMap(Favoritable::MAP);
+        Relation::morphMap(FavoritableType::morphMap());
 
         Gate::policy(Favorite::class, FavoritePolicy::class);
     }
