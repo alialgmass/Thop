@@ -3,8 +3,8 @@
 namespace Modules\Inquiries\Policies;
 
 use App\Models\User;
-use Modules\Auth\Enums\AccountType;
 use Modules\Inquiries\Models\Inquiry;
+use Modules\Inquiries\Policies\Concerns\ChecksBuyerAccountType;
 
 /**
  * Authorization for inquiries, per the Spec Section 8 matrix row "Inquiries":
@@ -14,6 +14,8 @@ use Modules\Inquiries\Models\Inquiry;
  */
 class InquiryPolicy
 {
+    use ChecksBuyerAccountType;
+
     /**
      * Create: Wholesaler and Retailer act as buyers in R1. Importer is
      * seller-only in R1 (no C ability per §8); Customer is R3-only
@@ -21,7 +23,7 @@ class InquiryPolicy
      */
     public function create(User $user): bool
     {
-        return in_array($user->account_type, [AccountType::Wholesaler, AccountType::Retailer], true);
+        return $this->isBuyerAccountType($user);
     }
 
     /**
@@ -29,7 +31,7 @@ class InquiryPolicy
      */
     public function view(User $user, Inquiry $inquiry): bool
     {
-        return $this->isBuyer($user, $inquiry) || $this->isSeller($user, $inquiry);
+        return $inquiry->involvesUser($user);
     }
 
     /**
@@ -38,16 +40,6 @@ class InquiryPolicy
      */
     public function update(User $user, Inquiry $inquiry): bool
     {
-        return $this->isSeller($user, $inquiry);
-    }
-
-    private function isBuyer(User $user, Inquiry $inquiry): bool
-    {
-        return $inquiry->buyer_id === $user->getKey();
-    }
-
-    private function isSeller(User $user, Inquiry $inquiry): bool
-    {
-        return $inquiry->seller_business_id === $user->businessAccount?->getKey();
+        return $inquiry->isSeller($user);
     }
 }

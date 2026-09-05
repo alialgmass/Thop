@@ -7,6 +7,7 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Modules\Businesses\Models\BusinessAccount;
 use Modules\Catalog\Models\Product;
 use Modules\Inquiries\Database\Factories\InquiryFactory;
@@ -75,6 +76,41 @@ class Inquiry extends Model
     public function product(): BelongsTo
     {
         return $this->belongsTo(Product::class);
+    }
+
+    /**
+     * @return HasMany<Rfq, $this>
+     */
+    public function rfqs(): HasMany
+    {
+        return $this->hasMany(Rfq::class);
+    }
+
+    /**
+     * Whether the given user is this inquiry's buyer — the single place
+     * that comparison lives, so policies never re-derive it (InquiryPolicy,
+     * RfqPolicy, QuotationPolicy all call through here).
+     */
+    public function isBuyer(User $user): bool
+    {
+        return $this->buyer_id === $user->getKey();
+    }
+
+    /**
+     * Whether the given user owns this inquiry's seller-side business.
+     */
+    public function isSeller(User $user): bool
+    {
+        return $this->seller_business_id === $user->businessAccount?->getKey();
+    }
+
+    /**
+     * Either party — the "may view this thread" check shared by every
+     * policy that gates on inquiry participation.
+     */
+    public function involvesUser(User $user): bool
+    {
+        return $this->isBuyer($user) || $this->isSeller($user);
     }
 
     /**

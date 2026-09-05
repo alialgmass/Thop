@@ -9,13 +9,13 @@ use Illuminate\Http\Request;
 use Modules\Auth\Http\Concerns\ThrottlesByKey;
 use Modules\Businesses\Models\BusinessAccount;
 use Modules\Catalog\Models\Product;
-use Modules\Core\Exceptions\ApiException\ExceptionResponse;
 use Modules\Core\Http\Controllers\Controller;
 use Modules\Core\Support\Api\ApiResponse;
 use Modules\Inquiries\Enums\InquiryParty;
 use Modules\Inquiries\Enums\LeadStatus;
 use Modules\Inquiries\Events\InquiryCreated;
-use Modules\Inquiries\Exceptions\InquiryLimitExceededException;
+use Modules\Inquiries\Http\Concerns\EnforcesInquiryLimit;
+use Modules\Inquiries\Http\Concerns\GuardsProductOwnership;
 use Modules\Inquiries\Http\Requests\StoreInquiryRequest;
 use Modules\Inquiries\Http\Requests\UpdateInquiryLeadStatusRequest;
 use Modules\Inquiries\Http\Resources\InquiryResource;
@@ -30,6 +30,8 @@ class InquiryController extends Controller
 {
     use ApiResponse;
     use AuthorizesRequests;
+    use EnforcesInquiryLimit;
+    use GuardsProductOwnership;
     use ThrottlesByKey;
 
     public function __construct(private readonly EntitlementService $entitlements) {}
@@ -80,14 +82,18 @@ class InquiryController extends Controller
         $product = $request->filled('product_id') ? Product::find($request->integer('product_id')) : null;
         $sellerBusinessId = $request->integer('seller_business_id') ?: $product?->business_account_id;
 
-        if ($product && $request->filled('seller_business_id') && $product->business_account_id !== $request->integer('seller_business_id')) {
-            throw ExceptionResponse::instance(__('inquiries::messages.seller_business_mismatch'), 422)
-                ->setCustomBody(['seller_business_id' => [__('inquiries::messages.seller_business_mismatch')]]);
+        if ($product && $request->filled('seller_business_id')) {
+            $this->assertProductBelongsToBusiness(
+                $product,
+                $request->integer('seller_business_id'),
+                'inquiries::messages.seller_business_mismatch',
+                'seller_business_id',
+            );
         }
 
         $sellerBusiness = BusinessAccount::findOrFail($sellerBusinessId);
 
-        $this->assertWithinInquiryLimit($sellerBusiness, InquiryParty::Seller);
+        $this->assertWithinInquiryLimit($this->entitlements, $sellerBusiness, InquiryParty::Seller);
 
         $buyerBusiness = $user->businessAccount;
 
@@ -95,7 +101,7 @@ class InquiryController extends Controller
             // Buyer-side limits are optional: no current plan defines
             // inquiry_limit for a buyer (Open Decision #2) — absent means
             // no-op, not blocked, unlike the seller side above.
-            $this->assertWithinInquiryLimit($buyerBusiness, InquiryParty::Buyer, optional: true);
+            $this->assertWithinInquiryLimit($this->entitlements, $buyerBusiness, InquiryParty::Buyer, optional: true);
         }
 
         $inquiry = Inquiry::create([
@@ -138,22 +144,5 @@ class InquiryController extends Controller
             ->apiMessage(__('inquiries::messages.status_updated'))
             ->apiBody(['inquiry' => new InquiryResource($inquiry)])
             ->apiResponse();
-    }
-
-    /**
-     * The single check for "may this party create another inquiry" (BR-INQ-02).
-     * `$optional` lets the buyer side no-op when its plan doesn't define
-     * inquiry_limit at all, rather than treating "undefined" as "over limit"
-     * the way the seller side must (every seller plan defines this key).
-     */
-    private function assertWithinInquiryLimit(BusinessAccount $business, InquiryParty $party, bool $optional = false): void
-    {
-        if ($optional && $this->entitlements->get($business, 'inquiry_limit') === null) {
-            return;
-        }
-
-        if (! $this->entitlements->can($business, 'inquiry_limit')) {
-            throw new InquiryLimitExceededException($party);
-        }
     }
 }

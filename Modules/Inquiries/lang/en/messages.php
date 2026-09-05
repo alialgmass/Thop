@@ -7,4 +7,7 @@ return [
     'status_updated' => 'Lead status updated.',
     'reported' => 'Thanks — this inquiry has been reported for review.',
     'seller_business_mismatch' => 'The product does not belong to the seller you selected.',
+    'rfq_created' => 'Your request for quotation has been sent.',
+    'rfq_product_mismatch' => 'The product does not belong to this inquiry\'s seller.',
+    'quotation_sent' => 'Your quotation has been sent.',
 ];
