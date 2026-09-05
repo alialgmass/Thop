@@ -42,4 +42,12 @@ class InquiryPolicy
     {
         return $inquiry->isSeller($user);
     }
+
+    /**
+     * Either party may report an inquiry (US-INQ-09).
+     */
+    public function report(User $user, Inquiry $inquiry): bool
+    {
+        return $inquiry->involvesUser($user);
+    }
 }
