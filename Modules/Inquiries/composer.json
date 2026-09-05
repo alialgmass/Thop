@@ -1,0 +1,23 @@
+{
+    "name": "thob/inquiries",
+    "description": "Inquiries module - buyer-to-seller contact, lead management (US-INQ-01, US-INQ-06/07)",
+    "authors": [],
+    "extra": {
+        "laravel": {
+            "providers": [],
+            "aliases": {}
+        }
+    },
+    "autoload": {
+        "psr-4": {
+            "Modules\\Inquiries\\": "/",
+            "Modules\\Inquiries\\Database\\Factories\\": "database/factories/",
+            "Modules\\Inquiries\\Database\\Seeders\\": "database/seeders/"
+        }
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "Modules\\Inquiries\\Tests\\": "tests/"
+        }
+    }
+}

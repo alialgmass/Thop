@@ -1,0 +1,11 @@
+{
+    "name": "Inquiries",
+    "alias": "inquiries",
+    "description": "Buyer-initiated contact + seller lead management (US-INQ-01, US-INQ-06/07, BR-INQ-01).",
+    "keywords": [],
+    "priority": 0,
+    "providers": [
+        "Modules\\Inquiries\\Providers\\InquiriesServiceProvider"
+    ],
+    "files": []
+}

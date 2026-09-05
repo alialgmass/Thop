@@ -9,5 +9,6 @@
     "Catalog": true,
     "Search": true,
     "Favorites": true,
-    "Comparison": true
+    "Comparison": true,
+    "Inquiries": true
 }
