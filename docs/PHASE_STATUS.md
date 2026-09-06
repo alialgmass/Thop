@@ -32,7 +32,7 @@ remaining open gaps are Phase-3 build work (#15/#16), infra (#24), and product d
 | 0 | Auth foundation | ✅ | ✅ 46 | — | ✅ | ✅ | DOCUMENTED |
 | 1 | Business profile / Verification / Audit | ✅ | ✅ 46 (Businesses 12 + Verification 29 + Admin 5) | — | ✅ | ✅ | DOCUMENTED |
 | 2 | Subscriptions & entitlements | ✅ | ✅ 64 | — | ✅ | ✅ | DOCUMENTED |
-| 3 | **Catalog** — 3.1 Products ✅ · 3.2 Media ⬜ (#15) · 3.3 Bulk import ⬜ (#16) | 🟡 products CRUD/lifecycle/review done; media + import missing | 🟡 11 Catalog tests (products) | — | 🟡 read path only | 🟡 (excluded from Postman until 3.2/3.3) | **PARTIAL** |
+| 3 | **Catalog** — 3.1 Products ✅ · 3.2 Media ✅ (#15) · 3.3 Bulk import ⬜ (#16) | 🟡 products + media done; bulk import missing | ✅ 21 Catalog tests | — | ✅ media + product endpoints | ✅ (§4) | **PARTIAL** |
 | 4 | Search | ✅ | ✅ 37 | — | ✅ | ✅ | DOCUMENTED |
 | 5 | Favorites + Comparison | ✅ | ✅ 15 (Favorites 9 + Comparison 6) | — | ✅ | ✅ | DOCUMENTED |
 | 6 | Inquiries / RFQ / Quotation / Reporting | ✅ | ✅ 36 | — | ✅ | ✅ | DOCUMENTED |
@@ -41,10 +41,10 @@ remaining open gaps are Phase-3 build work (#15/#16), infra (#24), and product d
 | 9 | Admin dashboard (rest of) | 🟡 verification + subscriptions panels only | 🟡 12 Filament tests | — | n/a (Filament) | ⬜ | PENDING |
 | 10 | R1 hardening (authz suite / load / security) | ⬜ | ⬜ | — | ⬜ | ⬜ | PENDING |
 
-**Full suite: 315 automated tests, 315 passing, 0 failing, 0 skipped, 927 assertions**
-(`php artisan test`, SQLite `:memory:`, 2026-09-06). Timeline: 294 baseline → 296 (D6/D7 fixes)
-→ **315** (gap-closure batch: D5 envelope, D8 contact-info, D11/D13 env + OTP capture, D3
-last-activity, BR-SUB-03 product hiding).
+**Full suite: 326 automated tests, 326 passing, 0 failing, 0 skipped, 959 assertions**
+(`php artisan test`, SQLite `:memory:`, 2026-09-06). Timeline: 294 baseline → 296 (D6/D7)
+→ 315 (gap-closure: D5 envelope, D8 contact-info, D11/D13, D3, BR-SUB-03) → **326** (#15
+Phase 3.2 media: upload/reorder/delete + publish requires ≥1 image).
 
 ---
 
@@ -105,9 +105,10 @@ last-activity, BR-SUB-03 product hiding).
 
 ## Current development frontier
 
-1. **Phase 3 media + bulk import** (#15 → #16) — the only remaining R1 feature build.
-   3.1 (product CRUD, lifecycle, review queue, plan limit) is done and tested; media upload
-   and XLSX/CSV import are not.
+1. **Phase 3 bulk import** (#16) — the last remaining R1 feature build. 3.1 (product CRUD,
+   lifecycle, review queue, plan limit) and 3.2 (media upload/reorder/delete + publish
+   requires ≥1 image) are done and tested; XLSX/CSV import is not (needs a spreadsheet-lib
+   decision).
 2. **Manual QA pass** on Phases 0–2, 4–6 (#25) — checklists in `docs/qa/`, none executed;
    blocked on #15 + the gap-closure batch landing.
 3. **Follow-ups**: MySQL FULLTEXT CI lane + 100k load check (#24, D12); AV scan on

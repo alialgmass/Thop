@@ -12,6 +12,7 @@ use Modules\Catalog\Events\ProductHidden;
 use Modules\Catalog\Events\ProductRejected;
 use Modules\Catalog\Exceptions\ProductNotInReviewException;
 use Modules\Catalog\Models\Product;
+use Modules\Core\Exceptions\ApiException\ExceptionResponse;
 
 /**
  * The single place an admin decision on a product review is applied (US-SEL-11,
@@ -24,6 +25,11 @@ class DecideProductReview
     public function approve(Product $product, User $admin): Product
     {
         $this->assertAwaitingReview($product);
+
+        if (! $product->hasImage()) {
+            throw ExceptionResponse::instance(__('catalog::messages.media_required_to_publish'), 422)
+                ->setCustomBody(['media' => [__('catalog::messages.media_required_to_publish')]]);
+        }
 
         DB::transaction(function () use ($product, $admin): void {
             $product->forceFill([

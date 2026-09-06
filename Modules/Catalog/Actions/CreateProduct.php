@@ -40,11 +40,13 @@ class CreateProduct
             throw new ProductLimitExceededException;
         }
 
-        $status = $explicitDraft
+        // A fresh product has no images, so it can never land in `published`
+        // directly (US-SEL-03 — ≥1 image before publish). When review is ON it
+        // enters the queue; otherwise it starts as a draft the seller publishes
+        // via `PATCH /products/{id}/status` once images are attached.
+        $status = ($explicitDraft || ! CatalogGating::requiresReviewOnCreate())
             ? ProductStatus::Draft
-            : (CatalogGating::requiresReviewOnCreate()
-                ? ProductStatus::PendingReview
-                : ProductStatus::Published);
+            : ProductStatus::PendingReview;
 
         $product = $business->products()->create(array_merge($attributes, [
             'business_account_id' => $business->getKey(),

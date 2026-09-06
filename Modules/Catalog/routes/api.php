@@ -3,6 +3,7 @@
 use Illuminate\Support\Facades\Route;
 use Modules\Catalog\Http\Controllers\AdminProductReviewController;
 use Modules\Catalog\Http\Controllers\ProductController;
+use Modules\Catalog\Http\Controllers\ProductMediaController;
 
 Route::middleware(['auth:sanctum'])->prefix('v1')->group(function () {
 
@@ -17,6 +18,13 @@ Route::middleware(['auth:sanctum'])->prefix('v1')->group(function () {
         Route::delete('/{product}', [ProductController::class, 'destroy'])->name('destroy');
         Route::post('/{product}/duplicate', [ProductController::class, 'duplicate'])->name('duplicate');
         Route::patch('/{product}/status', [ProductController::class, 'updateStatus'])->name('status');
+
+        // Images (US-SEL-03). Order is by sort_order asc; index 0 is the cover.
+        Route::prefix('{product}/media')->name('media.')->group(function () {
+            Route::post('/', [ProductMediaController::class, 'store'])->name('store');
+            Route::patch('/order', [ProductMediaController::class, 'reorder'])->name('reorder');
+            Route::delete('/{media}', [ProductMediaController::class, 'destroy'])->name('destroy');
+        });
     });
 
     // Admin review queue (US-SEL-11, BR-ADM-01) — authorization via ProductPolicy

@@ -16,4 +16,22 @@ return [
     */
     'review_create' => env('CATALOG_REVIEW_CREATE', true),
     'review_edit' => env('CATALOG_REVIEW_EDIT', false),
+
+    /*
+    |--------------------------------------------------------------------------
+    | Product media (US-SEL-03, §12)
+    |--------------------------------------------------------------------------
+    |
+    | Images live on the public disk (local in dev, S3+CDN in production).
+    | A product needs at least one image before it may go public; drafts and
+    | pending-review products may have none.
+    |
+    */
+    'media' => [
+        'disk' => env('PRODUCT_MEDIA_DISK', 'public'),
+        'max_file_size_kb' => (int) env('PRODUCT_MEDIA_MAX_KB', 5120),
+        'max_per_product' => (int) env('PRODUCT_MEDIA_MAX_PER_PRODUCT', 10),
+        'accepted_mimes' => ['jpg', 'jpeg', 'png', 'webp'],
+        'accepted_mimetypes' => ['image/jpeg', 'image/png', 'image/webp'],
+    ],
 ];

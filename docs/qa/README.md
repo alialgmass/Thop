@@ -11,7 +11,10 @@ Hand-maintained. One document per **completed** phase:
 | [phase-5-favorites-comparison.md](phase-5-favorites-comparison.md) | 5 | Favorites, comparison |
 | [phase-6-inquiries.md](phase-6-inquiries.md) | 6 | Inquiry, RFQ, quotation, leads, reporting |
 
-Phase 3 (Catalog) is **not covered** — not implemented. Phases 7–10 are not started.
+Phase 3 (Catalog): **3.1 products + 3.2 media are built and tested** (`Modules/Catalog` —
+`ProductTest` 11, `ProductMediaTest` 10; endpoints in `docs/API_REFERENCE.md` §4). A
+dedicated phase-3 QA doc is a follow-up; **3.3 bulk import (#16)** is not built.
+Phases 7–10 are not started.
 
 ---
 

@@ -1,7 +1,7 @@
 # THOB Postman Collection
 
 Hand-maintained, seeded from the live route inventory + FormRequest/Resource source
-(2026-09-06). Covers **completed phases only: 0, 1, 2, 4, 5, 6** — 45 requests in 7 folders.
+(2026-09-06). Covers **phases 0, 1, 2, 3 (products + media), 4, 5, 6** — 57 requests in 8 folders.
 
 | File | What it is |
 |---|---|
@@ -63,9 +63,8 @@ Others show the shape via the request description + `docs/API_REFERENCE.md`.
 
 ## What's NOT here
 
-- **Phase 3 Catalog** product CRUD (`POST/PATCH/DELETE /products*`, `/admin/products*`) —
-  the phase isn't implemented. Search reads product data, so those requests work against
-  seeded/factory products only.
+- **Phase 3 bulk import** (`POST /products/import` + template + per-row report) — not built
+  (#16). The "Phase 3 — Catalog" folder covers product CRUD + media (3.1/3.2).
 - **Verification document download** is a single "paste the signed URL" request — the URL
   comes back in the *Upload* response and is saved to `{{download_url}}`.
 - **Filament admin actions** (grant trial, extend period, taxonomy CRUD) — those are panel

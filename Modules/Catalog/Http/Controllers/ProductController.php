@@ -7,6 +7,7 @@ use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Modules\Catalog\Actions\CreateProduct;
+use Modules\Catalog\Actions\PublishProduct;
 use Modules\Catalog\Enums\ProductStatus;
 use Modules\Catalog\Http\Requests\StoreProductRequest;
 use Modules\Catalog\Http\Requests\UpdateProductRequest;
@@ -154,7 +155,13 @@ class ProductController extends Controller
 
         $status = ProductStatus::from($request->input('status'));
 
-        $product->forceFill(['status' => $status])->save();
+        // Submitting for publish goes through the gate (≥1 image + price XOR,
+        // US-SEL-03/BR-SEL-03) and lands in pending_review or published per the
+        // review config. Hiding / marking unavailable is a direct transition.
+        $product = match ($status) {
+            ProductStatus::Published, ProductStatus::PendingReview => app(PublishProduct::class)->publish($product),
+            default => tap($product, fn (Product $p) => $p->forceFill(['status' => $status])->save()),
+        };
 
         return $this
             ->apiMessage(__('catalog::messages.status_updated'))

@@ -4,9 +4,8 @@ Hand-maintained. Seeded from `php artisan route:list` + the FormRequest / Resour
 source on **2026-09-06**. Covers **completed phases only: 0, 1, 2, 4, 5, 6** plus the
 always-public Taxonomy read endpoints (Phase 1 dependency).
 
-Phase 3 (Catalog CRUD: `POST/PATCH/DELETE /products*`, `/admin/products*`) is **Partial /
-Phase 3 Pending** — those routes exist in code but the phase is not implemented or tested.
-They are listed at the bottom under "Not covered" and have **no** request/response contract here.
+Phase 3 (Catalog) is **partially done**: 3.1 products + 3.2 media are implemented and
+tested (documented in §4); 3.3 bulk import is not built.
 
 ---
 
@@ -463,29 +462,33 @@ No input, no pagination. Active rows only, ordered by `name_en`.
 
 ---
 
-## 4. Not covered here (Phase 3 Catalog — **Partial / Phase 3 Pending**)
+## 4. Phase 3 — Catalog (seller product management)
 
-These routes are registered (`Modules/Catalog/routes/api.php`) but the phase is **not
-implemented or tested**. No request/response contract is documented; do not build a client
-or Postman request against them until Phase 3 lands.
+**3.1 Products + 3.2 Media are implemented and tested** (`Modules/Catalog`). **3.3 Bulk
+import (XLSX/CSV) is not built** (issue #16). All routes below are `auth:sanctum`.
 
-```
-GET    /api/v1/products/mine
-GET    /api/v1/products/mine/{product}
-POST   /api/v1/products
-PATCH  /api/v1/products/{product}
-DELETE /api/v1/products/{product}
-POST   /api/v1/products/{product}/duplicate
-PATCH  /api/v1/products/{product}/status
-GET    /api/v1/admin/products
-POST   /api/v1/admin/products/{product}/approve
-POST   /api/v1/admin/products/{product}/reject
-POST   /api/v1/admin/products/{product}/hide
-```
+| Method | Path | Role / ownership | Notes |
+|---|---|---|---|
+| GET | `/products/mine` | owns a business profile | Paginated, all statuses, `ProductResource` (media, price tiers, internal status). |
+| GET | `/products/mine/{product}` | owner or admin (else 403) | Single product, full resource. |
+| POST | `/products` | importer/retailer (not wholesaler/customer) | Creates in **`draft`** (review off) or **`pending_review`** (review on). Never straight to `published` — a fresh product has no images. Enforces `product_limit` (BR-SEL-01) and price XOR (BR-SEL-03). Body: `name_ar`, `fabric_type_id`, `material_id`, `governorate_id`, `width_cm`, `weight_gsm`, `unit`, `price` XOR `price_on_contact`, `quantity_available`, `moq?`, `colors[]?`, `price_tiers[]?`, `draft?`. → **201**. |
+| PATCH | `/products/{product}` | owner (else 403) | Partial update; re-syncs `colors` / `price_tiers` when present. |
+| DELETE | `/products/{product}` | owner (else 403) | Soft delete (BR-SEL-04); decrements `product_count`. |
+| POST | `/products/{product}/duplicate` | owner (else 403) | Copies as a `draft`; increments `product_count`. → **201**. |
+| PATCH | `/products/{product}/status` | owner (else 403) | `status` ∈ `hidden` \| `unavailable` \| `published` \| `pending_review`. **Publishing goes through the gate**: ≥1 image (US-SEL-03) + price XOR → else **422** (`body.media` / `body.price`); with review on, `published` lands in `pending_review`. |
+| **POST** | **`/products/{product}/media`** | **owner (else 403)** | **Multipart `file`** — one image, validated by extension + MIME + size (`catalog.media.*`), stored on the public disk at `products/{id}/…`. Cap `catalog.media.max_per_product` (default 10) → **422**. → **201**, `body.media: { id, disk, path, mime_type, size, original_name, type, sort_order, url }`. |
+| **PATCH** | **`/products/{product}/media/order`** | **owner (else 403)** | Body `media: [id, …]` — the **full** ordered id list; index 0 is the cover. A partial or foreign list → **422**. → `body.media: [ … ]`. |
+| **DELETE** | **`/products/{product}/media/{media}`** | **owner (else 403)** | Deletes the file from the disk and the row. Wrong product for the media id → **404**. |
+| GET | `/admin/products` | admin (else 403) | Pending-review queue. |
+| POST | `/admin/products/{product}/approve` | admin (else 403) | `pending_review` → `published`; blocked **422** if the product has no image. Audit `product.approved`, event `ProductApproved`. |
+| POST | `/admin/products/{product}/reject` | admin (else 403) | Body `reason`. → `rejected` + reason. Audit `product.rejected`. |
+| POST | `/admin/products/{product}/hide` | admin (else 403) | `published` → `hidden`. Audit `product.hidden`. |
 
-Search (Phase 4) reads the `products` / `product_media` / `product_price_tiers` tables that
-Phase 3 created, and `ProductCardResource` / `ProductDetailResource` live in the Catalog
-module — that read path **is** covered. Product *writes* are not.
+The primary/cover image is the media row with the lowest `sort_order`
+(`ProductCardResource.primary_image`). **AVL-NFR-03** (never lose product data on a failed
+image upload) holds by construction: the product always exists before any media call.
 
-Also out of scope (later phases): Chat (7), Notifications (8), the rest of Admin (9),
+Still pending: **`POST /products/import`** + template download + per-row result report (#16).
+
+Out of scope (later phases): Chat (7), Notifications (8), rest of Admin (9),
 Orders/Payments/Shipping (R2–R4).
