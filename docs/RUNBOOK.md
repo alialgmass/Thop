@@ -59,6 +59,7 @@ dormant.
 | `OTP_DRIVER` | `log` | OTP sender binding. `log` = `LogOtpSender`, which records only *that* a code was issued, **never the code** (SEC-NFR-02). Add real SMS as a new key in `Modules\Auth\Providers\AuthServiceProvider::OTP_DRIVERS`. |
 | `VERIFICATION_DISK` | `verification` | Filesystem disk name for verification documents. |
 | `VERIFICATION_DISK_DRIVER` | `local` | `local` in dev; `s3` in prod (private bucket). Defined in `config/filesystems.php`. |
+| `VERIFICATION_SCANNER` | `signature` | Malware scan on uploads (SEC-NFR-05). `signature` = dependency-free EICAR check; `null` = off; a real ClamAV/hosted adapter is registered in `VerificationServiceProvider::SCANNERS`. |
 | `FILESYSTEM_DISK` | `local` | Product media (Phase 3) will use `public`. |
 
 OTP tuning lives in `Modules/Auth/config/otp.php` (length 6, TTL 300s, 3 attempts, handoff
@@ -144,13 +145,14 @@ Current baseline (2026-09-06, SQLite `:memory:`):
 
 | Suite | Tests | Pass | Fail | Skip |
 |---|---|---|---|---|
-| Full | 296 | 296 | 0 | 0 |
-| Auth | 46 | 46 | 0 | 0 |
-| Businesses + Verification + Admin | 46 | 46 | 0 | 0 |
-| Subscriptions | 64 | 64 | 0 | 0 |
+| Full | 328 | 328 | 0 | 0 |
+| Auth | 50 | 50 | 0 | 0 |
+| Businesses + Verification + Admin | 52 | 52 | 0 | 0 |
+| Subscriptions | 72 | 72 | 0 | 0 |
+| Catalog | 21 | 21 | 0 | 0 |
 | Search | 37 | 37 | 0 | 0 |
 | Favorites + Comparison | 15 | 15 | 0 | 0 |
-| Inquiries | 36 | 36 | 0 | 0 |
+| Inquiries | 37 | 37 | 0 | 0 |
 
 ---
 

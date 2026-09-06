@@ -30,7 +30,7 @@ remaining open gaps are Phase-3 build work (#15/#16), infra (#24), and product d
 | Phase | Area | Impl | Automated tests | QA | Postman | Docs | Verification |
 |---|---|---|---|---|---|---|---|
 | 0 | Auth foundation | ✅ | ✅ 46 | — | ✅ | ✅ | DOCUMENTED |
-| 1 | Business profile / Verification / Audit | ✅ | ✅ 46 (Businesses 12 + Verification 29 + Admin 5) | — | ✅ | ✅ | DOCUMENTED |
+| 1 | Business profile / Verification / Audit | ✅ | ✅ 52 (Businesses 16 + Verification 31 + Admin 5) | — | ✅ | ✅ | DOCUMENTED |
 | 2 | Subscriptions & entitlements | ✅ | ✅ 64 | — | ✅ | ✅ | DOCUMENTED |
 | 3 | **Catalog** — 3.1 Products ✅ · 3.2 Media ✅ (#15) · 3.3 Bulk import ⬜ (#16) | 🟡 products + media done; bulk import missing | ✅ 21 Catalog tests | — | ✅ media + product endpoints | ✅ (§4) | **PARTIAL** |
 | 4 | Search | ✅ | ✅ 37 | — | ✅ | ✅ | DOCUMENTED |
@@ -41,10 +41,9 @@ remaining open gaps are Phase-3 build work (#15/#16), infra (#24), and product d
 | 9 | Admin dashboard (rest of) | 🟡 verification + subscriptions panels only | 🟡 12 Filament tests | — | n/a (Filament) | ⬜ | PENDING |
 | 10 | R1 hardening (authz suite / load / security) | ⬜ | ⬜ | — | ⬜ | ⬜ | PENDING |
 
-**Full suite: 326 automated tests, 326 passing, 0 failing, 0 skipped, 959 assertions**
+**Full suite: 328 automated tests, 328 passing, 0 failing, 0 skipped, 966 assertions**
 (`php artisan test`, SQLite `:memory:`, 2026-09-06). Timeline: 294 baseline → 296 (D6/D7)
-→ 315 (gap-closure: D5 envelope, D8 contact-info, D11/D13, D3, BR-SUB-03) → **326** (#15
-Phase 3.2 media: upload/reorder/delete + publish requires ≥1 image).
+→ 315 (gap-closure) → 326 (#15 Phase 3.2 media) → **328** (#21 SEC-NFR-05 malware scan seam).
 
 ---
 
@@ -111,9 +110,9 @@ Phase 3.2 media: upload/reorder/delete + publish requires ≥1 image).
    decision).
 2. **Manual QA pass** on Phases 0–2, 4–6 (#25) — checklists in `docs/qa/`, none executed;
    blocked on #15 + the gap-closure batch landing.
-3. **Follow-ups**: MySQL FULLTEXT CI lane + 100k load check (#24, D12); AV scan on
-   verification uploads (#21, SEC-NFR-05); product decision on unverified-supplier
-   visibility (#26, Open Decision #5).
+3. **Follow-ups**: MySQL FULLTEXT CI lane + 100k load check (#24, D12); a real ClamAV/hosted
+   adapter for the verification `FileScanner` seam (#21 shipped the seam + EICAR default);
+   product decision on unverified-supplier visibility (#26, Open Decision #5).
 
 ## Open spec / implementation discrepancies
 
@@ -127,6 +126,7 @@ Phase 3.2 media: upload/reorder/delete + publish requires ≥1 image).
 | D6 | `POST /favorites` missing target | HTTP 404 but `custom_code: 2000` | Low (bug) | **FIXED 2026-09-06** — not-found branch now returns `custom_code 4040`; test asserts it. |
 | D7 | `rfq.needed_by_date` "must be today or future"; `quotation.valid_until` "must be future at creation" (§7 assumptions) | both were just `['required','date']` | Medium | **FIXED 2026-09-06** — added `after_or_equal:today` / `after:now`; 2 new tests. |
 | D8 | US-INQ-05: buyer sees seller phone/WhatsApp per plan/settings | `contact_channels` owner/admin-only, no plan gate | Medium | **FIXED 2026-09-06** — `contact_info_visible` entitlement (default off); `BusinessResource` + `ProductDetailResource.supplier` expose `contact_channels` to buyers only when the seller's active plan grants it. Open Decision #4 resolved-with-default. |
+| SEC-NFR-05 | uploaded files "scanned before publish" | only ext + MIME + size checked | Medium | **FIXED 2026-09-06 (#21)** — `FileScanner` seam wired into the verification upload (scans the temp file before anything is stored); default `SignatureFileScanner` flags EICAR; `VERIFICATION_SCANNER=null` disables; real ClamAV/hosted adapter is a deploy-config binding. |
 | D9 | US-SUB-04: "usage vs limits, renewal date, **billing history**" | usage + renewal only; no invoices | Low (expected) | Billing history depends on payments (R4). |
 | D10 | US-SUB-06 recurring billing | not implemented | Low (expected) | R4 / payment provider. |
 | D11 | `.env.example` | was the POS starter kit; no THOB keys | Low | **FIXED 2026-09-06** — rewritten for THOB (locale, DB, `OTP_DRIVER`, `VERIFICATION_DISK*`, `CATALOG_REVIEW_*`). |

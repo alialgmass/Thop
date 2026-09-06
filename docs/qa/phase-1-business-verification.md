@@ -8,7 +8,7 @@ tickets #4–#9 · US-ACC-03/04/05, US-ADM-01, US-ADM-09 · SEC-NFR-01/03/05, DA
 | Axis | State |
 |---|---|
 | Implementation | ✅ Business CRUD (3 EP), verification upload/submit/status/download (4 EP), admin queue/approve/reject (3 EP), audit log, Filament verification panel |
-| Automated Tests | ✅ **46 passing** — Businesses 12 (40 assn), Verification 29 (149 assn), Admin 5 (11 assn) |
+| Automated Tests | ✅ **50 passing** — Businesses 16 (+4 ContactVisibilityTest), Verification 31 (+2 malware scan), Admin 5 |
 | Manual QA | ⬜ **NOT RUN** — cases in §4 |
 | Postman Coverage | ✅ 9/10 REST endpoints. Signed-URL document **download** is a manual step (URL comes back in the upload response). |
 | Documentation | ✅ `docs/API_REFERENCE.md` §3 items 10–19 |
@@ -40,7 +40,7 @@ tickets #4–#9 · US-ACC-03/04/05, US-ADM-01, US-ADM-09 · SEC-NFR-01/03/05, DA
 | US-ADM-09 | Approve/reject write an audit row | `AdminVerificationReviewTest::approving_verifies…writes_an_audit_row…`, `rejecting_records_the_reason_writes_an_audit_row…` | ✅ |
 | BR-ADM-01 | **Every** admin action audited | above — verification only | 🟡 (other admin actions are Phase 9) |
 | SEC-NFR-05 | Files validated by type + size | as US-ACC-04 rows | ✅ |
-| SEC-NFR-05 | Files **scanned** before publish | — | ⬜ **not implemented** (see §3) |
+| SEC-NFR-05 | Files **scanned** before publish | `VerificationUploadTest::a_file_carrying_the_eicar_signature_is_rejected_and_nothing_is_written`, `the_scanner_can_be_disabled_by_config` | ✅ (`FileScanner` seam; `SignatureFileScanner` EICAR default; real ClamAV/hosted = deploy config) |
 | SEC-NFR-03 | Server-side authz by role + ownership | `Verification/tests/Unit/AuthorizationMatrixTest` (BusinessPolicy + VerificationPolicy rows) | ✅ |
 | DAT-FR-02 | Verification docs access-restricted to admin | as US-ACC-04; `VerificationPolicy::download` | ✅ (encryption-at-rest = infra, §4-3) |
 
@@ -48,7 +48,7 @@ tickets #4–#9 · US-ACC-03/04/05, US-ADM-01, US-ADM-09 · SEC-NFR-01/03/05, DA
 
 | Gap | Nature | Mitigation |
 |---|---|---|
-| **AV / malware scan of uploaded documents** (SEC-NFR-05 "scanned before publish") | **Not implemented.** Only extension + MIME + size are checked. | Backlog item; manual case §4-2 documents the intended check. Flag for Phase 10 security review. |
+| **AV / malware scan of uploaded documents** (SEC-NFR-05 "scanned before publish") | ~~Not implemented~~ **DONE 2026-09-06** — `FileScanner` seam wired into upload (scans the temp file before anything is stored). Default `SignatureFileScanner` flags the EICAR signature; `VERIFICATION_SCANNER=null` disables it; a real ClamAV/hosted adapter is a deploy-config binding in `VerificationServiceProvider::SCANNERS`. | Add the real backend adapter when the infra is provisioned. |
 | **Badge disappears on suspension** (US-ACC-05) | Suspension endpoint is Phase 9. `isVerified()` reads the column live (no cache), so it *should* flip — untested. | Re-test in Phase 9; manual case §4-5. |
 | **Real private S3 bucket + signed-URL expiry against S3** | Tests use `Storage::fake()`. `temporaryUrl` is S3-only. | Manual case §4-3 in a staging env with real S3. |
 | **BR-ADM-01 for non-verification admin actions** | Those actions don't exist yet. | Phase 9 QA. |
@@ -64,12 +64,14 @@ tickets #4–#9 · US-ACC-03/04/05, US-ADM-01, US-ADM-09 · SEC-NFR-01/03/05, DA
 - **Result:** ☐ pass ☐ fail
 
 ### QA-1-2 · Malicious / disguised file upload (SEC-NFR-05)
-- **Pre:** an EICAR test file renamed `register.pdf`; a real `.exe` renamed `.pdf`; a 20 MB PDF.
+- **Pre:** an EICAR test file with a `.pdf` extension and a real `%PDF` header prepended; a real
+  `.exe` renamed `.pdf`; a 20 MB PDF. (For a real ClamAV backend, set `VERIFICATION_SCANNER`
+  accordingly on staging.)
 - **Steps:** upload each to `POST /businesses/{id}/verification-documents`.
-- **Expected:** `.exe`→pdf and content-type mismatch → **400 `body.file`**, **no DB row, no file
-  written**. Oversized → 400. **KNOWN GAP:** an EICAR-carrying *valid* PDF is currently **accepted**
-  (no AV scan) — record this as a defect against SEC-NFR-05, do not pass the case.
-- **Result:** ☐ pass ☐ fail (expect fail on the EICAR PDF) — defect #:
+- **Expected:** `.exe`→pdf and content-type mismatch → **400 `body.file`**; oversized → 400;
+  **EICAR-carrying PDF → 422 `body.file`** ("failed a security scan") with **no DB row and no
+  file on the disk**. All three: nothing persisted.
+- **Result:** ☐ pass ☐ fail
 
 ### QA-1-3 · Verification document is private on real S3 (US-ACC-04, DAT-FR-02, SEC-NFR-01)
 - **Pre:** staging with `VERIFICATION_DISK_DRIVER=s3`, private bucket, SSE enabled.

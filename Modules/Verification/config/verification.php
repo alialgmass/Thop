@@ -15,6 +15,12 @@ return [
 
     'disk' => env('VERIFICATION_DISK', 'verification'),
 
+    // Malware scanner for uploads (SEC-NFR-05). `signature` is a cheap
+    // dependency-free check (EICAR + executable magic bytes); `null` disables
+    // scanning; production should point this at a real ClamAV / hosted scanner
+    // registered in VerificationServiceProvider::SCANNERS.
+    'scanner' => env('VERIFICATION_SCANNER', 'signature'),
+
     'accepted_mimes' => ['pdf', 'jpg', 'jpeg', 'png'],
 
     'accepted_mimetypes' => ['application/pdf', 'image/jpeg', 'image/png'],

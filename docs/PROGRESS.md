@@ -1,6 +1,6 @@
 # THOB — Progress Tracker
 
-آخر تحديث: 2026-09-06 — Phase 3.2 (Catalog media، issue #15) خلصت؛ full suite **326 tests passing**. + توثيق شامل للـ phases الخلصانة (0/1/2/4/5/6): QA test plan + traceability (`docs/qa/`)، Postman collection + environment (`docs/postman/`, 45 requests)، `docs/API_REFERENCE.md` (45 endpoints)، `CONTEXT.md` (glossary)، `docs/RUNBOOK.md`، `docs/PHASE_STATUS.md`. إصلاحين spec-backed: favorites 404 يرجّع `custom_code 4040` بدل 2000 (D6)، و`needed_by_date`/`valid_until` بقى ليهم date-floor (D7). full suite **296 tests passing** (كان 294، +2 tests جداد).
+آخر تحديث: 2026-09-06 — Phase 3.2 (Catalog media #15) + SEC-NFR-05 malware scan seam (#21) خلصوا؛ full suite **328 tests passing**. + توثيق شامل للـ phases الخلصانة (0/1/2/4/5/6): QA test plan + traceability (`docs/qa/`)، Postman collection + environment (`docs/postman/`, 45 requests)، `docs/API_REFERENCE.md` (45 endpoints)، `CONTEXT.md` (glossary)، `docs/RUNBOOK.md`، `docs/PHASE_STATUS.md`. إصلاحين spec-backed: favorites 404 يرجّع `custom_code 4040` بدل 2000 (D6)، و`needed_by_date`/`valid_until` بقى ليهم date-floor (D7). full suite **296 tests passing** (كان 294، +2 tests جداد).
 
 Phase 6 (Inquiries/RFQ/Quotation/Reporting) خلصت بالكامل (3 tickets).
 
@@ -136,6 +136,11 @@ Phase 6 (Inquiries/RFQ/Quotation/Reporting) خلصت بالكامل (3 tickets).
 - **D11 / D13**: `.env.example` اتعاد كتابته لـ THOB (locale, DB, `OTP_DRIVER`, `VERIFICATION_DISK*`, `CATALOG_REVIEW_*`). driver `capture` جديد للـ OTP (local/testing بس، مرفوض في production) بيحط الكود في الـ cache — `OTP_DRIVER=capture`.
 - **ملاحظة Phase 3**: 3.1 (Catalog products CRUD/lifecycle/review queue/plan limit) طلع متعمل ومتغطّى (11 tests) — PROGRESS كان بيقول ⬜ بالغلط. الناقص فعلاً: 3.2 media upload (#15)، 3.3 bulk import (#16).
 - full suite **315 tests passing** (كان 296).
+
+### Phase 3.2 media (#15) + SEC-NFR-05 scan (#21) — applied 2026-09-06
+- **#15 media** — `POST/PATCH order/DELETE /api/v1/products/{id}/media*`؛ disk `public`، تحقق extension+MIME+size + cap 10/منتج؛ reorder (index 0 = cover)؛ حذف بيمسح الملف. `PublishProduct` اتوصّل بـ `updateStatus` (≥1 صورة + price XOR قبل published/pending_review، وإلا 422)؛ `CreateProduct` مبيوصلش `published` مباشرة؛ admin approve لمنتج بلا صور → 422. 10 tests. `docs/API_REFERENCE.md` §4 + Postman folder.
+- **#21 SEC-NFR-05** — `Modules\Verification\Contracts\FileScanner` seam؛ `SignatureFileScanner` (default، بيكشف EICAR) + `NullFileScanner` (`VERIFICATION_SCANNER=null`)؛ binding config-driven في `VerificationServiceProvider::SCANNERS` (ClamAV/hosted حقيقي = deploy). الـ scan بيتم على الملف المؤقت قبل أي كتابة أو DB row؛ ملف مصاب → 422 `body.file`، مفيش row ولا ملف على الديسك. 2 tests.
+- full suite **328 passing**.
 
 ### توثيق + QA (applied 2026-09-06)
 - **ملفات جديدة**: `CONTEXT.md` (جذر — glossary)، `docs/API_REFERENCE.md`، `docs/RUNBOOK.md`، `docs/PHASE_STATUS.md`، `docs/qa/README.md` + `docs/qa/phase-{0,1,2,4,5,6}-*.md`، `docs/postman/THOB API.postman_collection.json` + `THOB.postman_environment.json` + `README.md`.

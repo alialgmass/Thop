@@ -9,6 +9,7 @@ use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Storage;
 use Modules\Businesses\Enums\VerificationStatus;
 use Modules\Businesses\Models\BusinessAccount;
+use Modules\Verification\Contracts\FileScanner;
 use Modules\Verification\Enums\VerificationRequestStatus;
 use Modules\Verification\Events\VerificationSubmitted;
 use Modules\Verification\Models\DocumentType;
@@ -87,6 +88,41 @@ class VerificationUploadTest extends TestCase
 
         $this->assertDatabaseCount('verification_documents', 0);
         $this->assertEmpty(Storage::disk('verification')->allFiles());
+    }
+
+    #[Test]
+    public function a_file_carrying_the_eicar_signature_is_rejected_and_nothing_is_written(): void
+    {
+        $eicar = 'X5O!P%@AP[4\\PZX54(P^)7CC)7}$EICAR-STANDARD-ANTIVIRUS-TEST-FILE!$H+H*';
+
+        $this->actingAs($this->owner)
+            ->postJson("/api/v1/businesses/{$this->business->id}/verification-documents", [
+                'document_type_id' => $this->type->id,
+                'file' => UploadedFile::fake()->createWithContent('register.pdf', "%PDF-1.4\n".$eicar),
+            ])
+            ->assertStatus(422)
+            ->assertJsonStructure(['body' => ['file']]);
+
+        $this->assertDatabaseCount('verification_documents', 0);
+        $this->assertEmpty(Storage::disk('verification')->allFiles());
+    }
+
+    #[Test]
+    public function the_scanner_can_be_disabled_by_config(): void
+    {
+        config()->set('verification.scanner', 'null');
+        $this->app->forgetInstance(FileScanner::class);
+
+        $eicar = 'X5O!P%@AP[4\\PZX54(P^)7CC)7}$EICAR-STANDARD-ANTIVIRUS-TEST-FILE!$H+H*';
+
+        $this->actingAs($this->owner)
+            ->postJson("/api/v1/businesses/{$this->business->id}/verification-documents", [
+                'document_type_id' => $this->type->id,
+                'file' => UploadedFile::fake()->createWithContent('register.pdf', "%PDF-1.4\n".$eicar),
+            ])
+            ->assertCreated();
+
+        $this->assertDatabaseCount('verification_documents', 1);
     }
 
     #[Test]

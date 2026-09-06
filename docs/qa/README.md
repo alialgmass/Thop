@@ -69,7 +69,7 @@ Each phase doc has the same five sections:
 | US-ADM-01 | Verification review approve/reject + reason | 1 | ✅ | AdminVerificationReviewTest (9), Filament/VerificationRequestPanelTest (6) |
 | US-ADM-09 | Immutable audit log | 1 | ✅ | AuditLogTest (5), AdminVerificationReviewTest (audit rows) |
 | BR-ADM-01 | Every admin action audited | 1 | 🟡 | Covered for verification approve/reject; **other admin actions are Phase 9** |
-| SEC-NFR-05 | Uploaded files type/size validated, scanned | 1 | 🟡 | type/size ✅ (VerificationUploadTest); **"scanned before publish" not implemented** |
+| SEC-NFR-05 | Uploaded files type/size validated, scanned | 1 | ✅ | type/size ✅; **`FileScanner` seam + `SignatureFileScanner` (EICAR) default** — `VerificationUploadTest` covers rejected-infected + config-disabled. Real ClamAV = deploy config. |
 | SEC-NFR-01 | No tokens/credentials in URLs | 1 | 🟡 | signed doc URL uses `signature`/`expires` query params only; **full TLS review = manual/infra** |
 | US-SUB-01/02 | Plan catalog per account type | 2 | ✅ | SubscriptionPlanTest (4) |
 | US-SUB-03 | Server-side entitlement enforcement | 2 | ✅ | EntitlementServiceTest (8), ClientTamperingTest (5) |
@@ -111,7 +111,7 @@ Each phase doc has the same five sections:
 | Gap | Requirement(s) | Nature | Owner |
 |---|---|---|---|
 | Wall-clock OTP expiry / lockout window & real SMS provider | SEC-NFR-02, US-ACC-01 | needs manual (time + external) | QA — see phase-0 |
-| Real antivirus scan of uploaded documents | SEC-NFR-05 (`scanned before publish`) | **not implemented** | Issue #21 |
+| ~~Real antivirus scan of uploaded documents~~ | ~~SEC-NFR-05~~ | **DONE** — `FileScanner` seam; `signature` (EICAR) default, `null` to disable, real ClamAV/hosted = deploy config (#21) | — |
 | Real private-S3 storage + signed-URL expiry against S3 | US-ACC-04, SEC-NFR-01 | needs manual (infra) | QA — see phase-1 |
 | Search performance @ 100k rows, MySQL FULLTEXT relevance | PRF-NFR-01, US-SRC-01 | needs manual/CI on MySQL | Issue #24 |
 | ~~Product hiding on subscription expiry~~ | ~~BR-SUB-03~~ | **DONE** — `SubscriptionCatalogVisibilityTest` | — |

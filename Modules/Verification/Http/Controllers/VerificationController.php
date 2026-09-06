@@ -11,6 +11,7 @@ use Modules\Businesses\Models\BusinessAccount;
 use Modules\Core\Exceptions\ApiException\ExceptionResponse;
 use Modules\Core\Http\Controllers\Controller;
 use Modules\Core\Support\Api\ApiResponse;
+use Modules\Verification\Contracts\FileScanner;
 use Modules\Verification\Enums\VerificationRequestStatus;
 use Modules\Verification\Events\VerificationSubmitted;
 use Modules\Verification\Http\Requests\UploadVerificationDocumentRequest;
@@ -33,13 +34,20 @@ class VerificationController extends Controller
 {
     use ApiResponse;
 
-    public function __construct(private readonly VerificationPolicy $policy) {}
+    public function __construct(
+        private readonly VerificationPolicy $policy,
+        private readonly FileScanner $scanner,
+    ) {}
 
     public function uploadDocument(UploadVerificationDocumentRequest $request, BusinessAccount $business): JsonResponse
     {
         abort_unless($this->policy->upload($request->user(), $business), 403);
 
         $file = $request->file('file');
+
+        // SEC-NFR-05: scan before anything is written or persisted.
+        $this->scanner->scan($file->getRealPath());
+
         $disk = (string) config('verification.disk');
         $key = "business/{$business->id}/".Str::uuid()->toString().'.'.$file->getClientOriginalExtension();
 
