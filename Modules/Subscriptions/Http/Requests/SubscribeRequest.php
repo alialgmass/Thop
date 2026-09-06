@@ -2,16 +2,11 @@
 
 namespace Modules\Subscriptions\Http\Requests;
 
-use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
+use Modules\Core\Http\Requests\BaseRequest;
 
-class SubscribeRequest extends FormRequest
+class SubscribeRequest extends BaseRequest
 {
-    public function authorize(): bool
-    {
-        return $this->user()->businessAccount()->exists();
-    }
-
     /**
      * @return array<string, mixed>
      */

@@ -28,6 +28,14 @@ class Quotation extends Model
     protected $guarded = ['id'];
 
     /**
+     * Sending a quotation is activity on the Lead (US-ANL-03) — touching the
+     * RFQ cascades to the inquiry via {@see Rfq::$touches}.
+     *
+     * @var array<int, string>
+     */
+    protected $touches = ['rfq'];
+
+    /**
      * @return array<string, string>
      */
     protected function casts(): array

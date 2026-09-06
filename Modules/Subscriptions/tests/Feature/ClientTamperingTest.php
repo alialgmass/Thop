@@ -50,8 +50,9 @@ class ClientTamperingTest extends TestCase
             ->postJson('/api/v1/subscriptions', ['plan_id' => $premiumPlan->id]);
 
         // Should be rejected because plan is inactive (validation checks is_active)
-        $response->assertStatus(422)
-            ->assertJsonValidationErrors('plan_id');
+        $response->assertStatus(400)
+            ->assertJsonPath('custom_code', 4000)
+            ->assertJsonStructure(['body' => ['plan_id']]);
     }
 
     #[Test]
@@ -98,8 +99,9 @@ class ClientTamperingTest extends TestCase
                 'plan_id' => 9999,
             ]);
 
-        $response->assertStatus(422)
-            ->assertJsonValidationErrors('plan_id');
+        $response->assertStatus(400)
+            ->assertJsonPath('custom_code', 4000)
+            ->assertJsonStructure(['body' => ['plan_id']]);
     }
 
     #[Test]
@@ -124,8 +126,9 @@ class ClientTamperingTest extends TestCase
                 'plan_id' => 9999,
             ]);
 
-        $response->assertStatus(422)
-            ->assertJsonValidationErrors('plan_id');
+        $response->assertStatus(400)
+            ->assertJsonPath('custom_code', 4000)
+            ->assertJsonStructure(['body' => ['plan_id']]);
     }
 
     #[Test]

@@ -983,7 +983,7 @@ Only tables required by actual SRS requirements are created — not the full ill
 **search_logs** — (id, term, result_count, user_id nullable, created_at) for SRC-FR-11's zero-result tracking; only zero/low-result rows need retain beyond a short TTL for the Admin dashboard — avoids building a full analytics warehouse for raw search logs.
 
 ### 10.5 Inquiries, RFQ, Quotation, Chat
-**inquiries** — (id, buyer_id (FK users), seller_business_id (FK business_accounts), product_id nullable (FK products), lead_status (enum: new/in_progress/done/not_completed), created_at). Indexes: (seller_business_id, lead_status).
+**inquiries** — (id, buyer_id (FK users), seller_business_id (FK business_accounts), product_id nullable (FK products), message, lead_status (enum: new/in_progress/done/not_completed), created_at, updated_at). Indexes: (seller_business_id, lead_status). This row IS the seller's Lead (BR-INQ-01) — `lead_status` is the only "Lead" concept; there is no separate `status` column and no `leads` table.
 
 **rfqs** — (id, inquiry_id FK, product_id FK, quantity, color_id nullable, needed_by_date).
 
@@ -1033,7 +1033,7 @@ Every `/api/v1/` response (success and error) uses the unified Core envelope (`M
 - `status` mirrors the HTTP class: `true` for any 2xx, `false` otherwise.
 - `body` carries the payload — a singular resource, `{ "data": ..., "links": ..., "meta": ... }` for paginated collections — or, on error, the field-keyed map `{ "field": ["message", ...] }`.
 - `custom_code` is the domain-level code (table below); `message` is a localized string (locale from `Accept-Language`, applied by the Core `api.language` middleware).
-- **Errors:** validation failures return HTTP 400 with per-field messages in `body`; custom exceptions render via `Modules\Core\Exceptions\Handler`; framework-native errors (403 policy denies, generic 429 limiter) keep Laravel defaults; `throttle.phone` (OTP) returns 429/4291. No SQL errors, stack traces, secrets, or infra details are ever exposed.
+- **Errors:** every `/api/*` failure is enveloped by `Modules\Core\Exceptions\Handler` — validation failures return HTTP 400 (`custom_code` 4000) with per-field messages in `body`; authorization denials return 403 (`4031`); missing resources return 404 (`4040`); `throttle.phone` (OTP) returns 429/4291. Only non-API (web/Filament) requests and unhandled 500s keep Laravel's native shape. No SQL errors, stack traces, secrets, or infra details are ever exposed.
 
 | custom_code | HTTP | Meaning |
 |---|---|---|
@@ -1069,7 +1069,7 @@ Every `/api/v1/` response (success and error) uses the unified Core envelope (`M
 
 **comparison** — `GET /compare?type=product|supplier&ids=1,2,3,4`.
 
-**inquiries / rfq / quotations** — `POST /inquiries`, `GET /inquiries` (mine, filterable by lead_status), `PATCH /inquiries/{id}/status`, `POST /inquiries/{id}/rfq`, `POST /rfqs/{id}/quotations`.
+**inquiries / rfq / quotations** — `POST /inquiries`, `GET /inquiries?role=buyer|seller&lead_status=` (self-scoped; the `role=seller` view is the Lead Management screen, each lead carrying `last_activity_at`), `GET /inquiries/{id}`, `PATCH /inquiries/{id}` (seller-only lead-status transition), `POST /inquiries/{id}/rfqs`, `GET /rfqs/{id}`, `POST /rfqs/{id}/quotations`, `POST /inquiries/{id}/reports`.
 
 **chat** — `GET /conversations`, `GET /conversations/{id}/messages` (paginated), `POST /conversations/{id}/messages`, `POST /conversations/{id}/read`, `POST /broadcasting/auth` (Pusher channel auth).
 
@@ -1077,7 +1077,7 @@ Every `/api/v1/` response (success and error) uses the unified Core envelope (`M
 
 **notifications** — `GET /notifications`, `POST /notifications/{id}/read`.
 
-**analytics** — `GET /businesses/{id}/analytics?range=` (basic + advanced per entitlement), `GET /businesses/{id}/leads`.
+**analytics** — `GET /businesses/{id}/analytics?range=` (basic + advanced per entitlement). The Lead Management screen (US-ANL-03) is served by `GET /inquiries?role=seller` — there is no separate `/businesses/{id}/leads` route.
 
 **admin** — `GET/POST /admin/verification-requests/{id}/approve|reject`, `GET/POST /admin/products/{id}/approve|reject|hide`, `CRUD /admin/taxonomy/*`, `CRUD /admin/subscription-plans`, `POST /admin/featured`, `GET /admin/dashboard/liquidity`, `POST /admin/accounts/{id}/suspend|reactivate`, `GET/POST /admin/reports`, `GET /admin/audit-logs`, `POST /admin/businesses` (assisted onboarding, ADM-FR-10).
 

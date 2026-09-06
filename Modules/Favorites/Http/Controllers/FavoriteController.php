@@ -9,6 +9,7 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Modules\Businesses\Models\BusinessAccount;
 use Modules\Catalog\Models\Product;
+use Modules\Core\Exceptions\Handler;
 use Modules\Core\Http\Controllers\Controller;
 use Modules\Core\Support\Api\ApiResponse;
 use Modules\Favorites\Enums\FavoritableType;
@@ -53,7 +54,11 @@ class FavoriteController extends Controller
         $id = $request->integer('id');
 
         if ($type->find($id) === null) {
-            return $this->apiCode(404)->apiMessage(__('favorites::messages.target_missing'))->apiResponse();
+            return $this
+                ->apiCode(404)
+                ->apiCustomCode(Handler::NOT_FOUND_CODE)
+                ->apiMessage(__('favorites::messages.target_missing'))
+                ->apiResponse();
         }
 
         $attributes = [

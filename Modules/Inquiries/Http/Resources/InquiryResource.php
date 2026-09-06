@@ -23,6 +23,9 @@ class InquiryResource extends JsonResource
             'product_id' => $this->product_id,
             'message' => $this->message,
             'lead_status' => $this->lead_status,
+            // `updated_at` IS the last activity: an RFQ or quotation touches the
+            // inquiry (US-ANL-03), as does a lead-status change.
+            'last_activity_at' => $this->updated_at,
             'created_at' => $this->created_at,
             'updated_at' => $this->updated_at,
         ];

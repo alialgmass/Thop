@@ -20,7 +20,7 @@ class StoreRfqRequest extends BaseRequest
             'product_id' => ['required', 'integer', 'exists:products,id'],
             'quantity' => ['required', 'integer', 'min:1'],
             'color_id' => ['nullable', 'integer', 'exists:colors,id'],
-            'needed_by_date' => ['required', 'date'],
+            'needed_by_date' => ['required', 'date', 'after_or_equal:today'],
         ];
     }
 }

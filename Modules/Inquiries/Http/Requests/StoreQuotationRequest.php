@@ -18,7 +18,7 @@ class StoreQuotationRequest extends BaseRequest
         return [
             'price' => ['required', 'numeric', 'min:0'],
             'availability_note' => ['nullable', 'string', 'max:255'],
-            'valid_until' => ['required', 'date'],
+            'valid_until' => ['required', 'date', 'after:now'],
         ];
     }
 }

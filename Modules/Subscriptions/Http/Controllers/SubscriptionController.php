@@ -2,7 +2,6 @@
 
 namespace Modules\Subscriptions\Http\Controllers;
 
-use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Routing\Controller;
@@ -50,6 +49,8 @@ class SubscriptionController extends Controller
      */
     public function store(SubscribeRequest $request, EntitlementService $entitlementService): JsonResponse
     {
+        $this->authorize('create', Subscription::class);
+
         $user = $request->user();
         $business = $user->businessAccount;
 
@@ -94,14 +95,7 @@ class SubscriptionController extends Controller
      */
     public function show(Subscription $subscription): JsonResponse
     {
-        try {
-            $this->authorize('view', $subscription);
-        } catch (AuthorizationException) {
-            return $this->apiCode(403)
-                ->apiCustomCode(4031)
-                ->apiMessage(__('subscriptions::messages.unauthorized'))
-                ->apiResponse();
-        }
+        $this->authorize('view', $subscription);
 
         return $this->apiBody([
             'subscription' => new SubscriptionResource($subscription->load('plan.entitlements')),
@@ -115,14 +109,7 @@ class SubscriptionController extends Controller
      */
     public function usage(Subscription $subscription, EntitlementService $entitlementService): JsonResponse
     {
-        try {
-            $this->authorize('view', $subscription);
-        } catch (AuthorizationException) {
-            return $this->apiCode(403)
-                ->apiCustomCode(4031)
-                ->apiMessage(__('subscriptions::messages.unauthorized'))
-                ->apiResponse();
-        }
+        $this->authorize('view', $subscription);
 
         $plan = $subscription->plan;
         $entitlements = $plan->entitlements->mapWithKeys(fn ($e) => [$e->key => $e->value]);
@@ -163,14 +150,7 @@ class SubscriptionController extends Controller
      */
     public function update(UpdateSubscriptionRequest $request, Subscription $subscription): JsonResponse
     {
-        try {
-            $this->authorize('update', $subscription);
-        } catch (AuthorizationException) {
-            return $this->apiCode(403)
-                ->apiCustomCode(4031)
-                ->apiMessage(__('subscriptions::messages.unauthorized'))
-                ->apiResponse();
-        }
+        $this->authorize('update', $subscription);
 
         if (! $subscription->isActive()) {
             return $this->apiCode(422)

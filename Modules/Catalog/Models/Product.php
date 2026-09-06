@@ -174,15 +174,19 @@ class Product extends Model
     }
 
     /**
-     * The single definition of "a buyer may see this product" (BR-SRC-02):
-     * published, not soft-deleted, and owned by a business whose account is
-     * not suspended. Both global search and the per-supplier catalog use this.
+     * The single definition of "a buyer may see this product" (BR-SRC-02,
+     * BR-SUB-03): published, not soft-deleted, owned by a business whose account
+     * is not suspended, and whose subscription has not lapsed. Global search,
+     * the per-supplier catalog, comparison and the buyer detail endpoint all
+     * route through here.
      *
      * @param  Builder<static>  $query
      */
     public function scopeBuyerVisible(Builder $query): void
     {
         $query->where('status', ProductStatus::Published)
-            ->whereHas('businessAccount', fn ($business) => $business->activeAccount());
+            ->whereHas('businessAccount', fn ($business) => $business
+                ->activeAccount()
+                ->subscriptionAllowsCatalog());
     }
 }

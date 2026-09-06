@@ -69,7 +69,9 @@ class FavoriteTest extends TestCase
     {
         $this->actingAs($this->user)
             ->postJson('/api/v1/favorites', ['type' => 'product', 'id' => 999999])
-            ->assertStatus(404);
+            ->assertStatus(404)
+            ->assertJsonPath('status', false)
+            ->assertJsonPath('custom_code', 4040);
     }
 
     #[Test]

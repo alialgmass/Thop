@@ -31,6 +31,14 @@ class Rfq extends Model
     protected $guarded = ['id'];
 
     /**
+     * Raising an RFQ counts as activity on the parent Lead (US-ANL-03) — bump
+     * the inquiry's `updated_at` so it IS the "last activity" timestamp.
+     *
+     * @var array<int, string>
+     */
+    protected $touches = ['inquiry'];
+
+    /**
      * @return array<string, string>
      */
     protected function casts(): array

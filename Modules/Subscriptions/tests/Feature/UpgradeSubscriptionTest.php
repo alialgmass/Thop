@@ -143,7 +143,8 @@ class UpgradeSubscriptionTest extends TestCase
                 'action' => 'invalid_action',
             ]);
 
-        $response->assertStatus(422)
-            ->assertJsonValidationErrors('action');
+        $response->assertStatus(400)
+            ->assertJsonPath('custom_code', 4000)
+            ->assertJsonStructure(['body' => ['action']]);
     }
 }

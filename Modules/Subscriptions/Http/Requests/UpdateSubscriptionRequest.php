@@ -2,15 +2,12 @@
 
 namespace Modules\Subscriptions\Http\Requests;
 
-use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
+use Modules\Core\Http\Requests\BaseRequest;
 
-class UpdateSubscriptionRequest extends FormRequest
+class UpdateSubscriptionRequest extends BaseRequest
 {
-    public function authorize(): bool
-    {
-        return true; // Authorization checked in controller via policy
-    }
+    // Authorization is checked in the controller via the SubscriptionPolicy.
 
     /**
      * @return array<string, mixed>

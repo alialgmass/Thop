@@ -51,6 +51,7 @@ class SubscriptionPlanSeeder extends Seeder
             'leads_management' => 'false',
             'support_level' => 'standard',
             'market_insights' => 'false',
+            'contact_info_visible' => 'false',
         ])->each(fn ($value, $key) => SubscriptionEntitlement::create([
             'plan_id' => $basic->getKey(),
             'key' => $key,
@@ -77,6 +78,7 @@ class SubscriptionPlanSeeder extends Seeder
             'leads_management' => 'true',
             'support_level' => 'standard',
             'market_insights' => 'false',
+            'contact_info_visible' => 'false',
         ])->each(fn ($value, $key) => SubscriptionEntitlement::create([
             'plan_id' => $pro->getKey(),
             'key' => $key,
@@ -103,6 +105,7 @@ class SubscriptionPlanSeeder extends Seeder
             'leads_management' => 'true',
             'support_level' => 'dedicated',
             'market_insights' => 'roadmap',
+            'contact_info_visible' => 'false',
         ])->each(fn ($value, $key) => SubscriptionEntitlement::create([
             'plan_id' => $premium->getKey(),
             'key' => $key,
@@ -131,6 +134,7 @@ class SubscriptionPlanSeeder extends Seeder
             'purchase_history' => 'true',
             'market_alerts' => 'true',
             'new_arrivals' => 'true',
+            'contact_info_visible' => 'false',
         ])->each(fn ($value, $key) => SubscriptionEntitlement::create([
             'plan_id' => $wholesaler->getKey(),
             'key' => $key,
@@ -158,6 +162,7 @@ class SubscriptionPlanSeeder extends Seeder
             'analytics' => 'true',
             'promotions' => 'true',
             'supplier_tools' => 'true',
+            'contact_info_visible' => 'false',
         ])->each(fn ($value, $key) => SubscriptionEntitlement::create([
             'plan_id' => $retailer->getKey(),
             'key' => $key,

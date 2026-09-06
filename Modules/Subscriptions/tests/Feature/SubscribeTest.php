@@ -109,8 +109,10 @@ class SubscribeTest extends TestCase
         $response = $this->actingAs($this->user)
             ->postJson('/api/v1/subscriptions', ['plan_id' => 9999]);
 
-        $response->assertStatus(422)
-            ->assertJsonValidationErrors('plan_id');
+        $response->assertStatus(400)
+            ->assertJsonPath('status', false)
+            ->assertJsonPath('custom_code', 4000)
+            ->assertJsonStructure(['body' => ['plan_id']]);
     }
 
     #[Test]
@@ -126,7 +128,9 @@ class SubscribeTest extends TestCase
         $response = $this->actingAs($noBusinessUser)
             ->postJson('/api/v1/subscriptions', ['plan_id' => $plan->id]);
 
-        $response->assertForbidden();
+        $response->assertForbidden()
+            ->assertJsonPath('status', false)
+            ->assertJsonPath('custom_code', 4031);
     }
 
     #[Test]

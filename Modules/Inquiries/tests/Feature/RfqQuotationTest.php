@@ -101,6 +101,19 @@ class RfqQuotationTest extends TestCase
     }
 
     #[Test]
+    public function a_needed_by_date_in_the_past_is_rejected(): void
+    {
+        $this->actingAs($this->buyer)
+            ->postJson("/api/v1/inquiries/{$this->inquiry->id}/rfqs", $this->validRfqPayload([
+                'needed_by_date' => now()->subDay()->toDateString(),
+            ]))
+            ->assertStatus(400)
+            ->assertJsonPath('custom_code', 4000);
+
+        $this->assertDatabaseCount('rfqs', 0);
+    }
+
+    #[Test]
     public function a_quantity_below_moq_warns_but_still_succeeds(): void
     {
         $this->actingAs($this->buyer)
@@ -168,6 +181,22 @@ class RfqQuotationTest extends TestCase
             ->assertJsonPath('body.quotation.expired', false);
 
         $this->assertDatabaseHas('quotations', ['rfq_id' => $rfq->id]);
+    }
+
+    #[Test]
+    public function a_quotation_validity_date_in_the_past_is_rejected(): void
+    {
+        $rfq = Rfq::factory()->create(['inquiry_id' => $this->inquiry->id, 'product_id' => $this->product->id]);
+
+        $this->actingAs($this->sellerUser)
+            ->postJson("/api/v1/rfqs/{$rfq->id}/quotations", [
+                'price' => 10,
+                'valid_until' => now()->subDay()->toDateTimeString(),
+            ])
+            ->assertStatus(400)
+            ->assertJsonPath('custom_code', 4000);
+
+        $this->assertDatabaseCount('quotations', 0);
     }
 
     #[Test]

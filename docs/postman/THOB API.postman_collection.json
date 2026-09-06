@@ -1,0 +1,941 @@
+{
+  "info": {
+    "name": "THOB API",
+    "_postman_id": "thob-api-collection",
+    "description": "THOB B2B fabric marketplace API — completed phases only (0, 1, 2, 4, 5, 6).\n\nBase URL, phones, and IDs come from the **THOB — Local** environment. Import both files.\n\n## Auth\nCollection-level auth adds `Authorization: Bearer {{token}}` to every request (public\nrequests override it to `noauth`). Run **Phase 0 → OTP request → OTP verify → Register**\n(or **Login**) once: the test scripts write `{{token}}` for you.\n\n## Not included\nPhase 3 Catalog product CRUD (`POST/PATCH/DELETE /products*`, `/admin/products*`) — the\nphase is not implemented. Search reads product data, so the Search folder works against\nseeded/factory products.\n\nSee `docs/API_REFERENCE.md` for full contracts and the `custom_code` registry, and\n`docs/postman/README.md` for the token flow.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "auth": {
+    "type": "bearer",
+    "bearer": [{ "key": "token", "value": "{{token}}", "type": "string" }]
+  },
+  "variable": [],
+  "event": [
+    {
+      "listen": "test",
+      "script": {
+        "type": "text/javascript",
+        "exec": [
+          "// Collection-wide sanity checks on the THOB envelope.",
+          "pm.test('response is JSON', () => pm.response.to.be.json);",
+          "const b = pm.response.json();",
+          "if (b && Object.prototype.hasOwnProperty.call(b, 'status')) {",
+          "  pm.test('envelope.status matches HTTP class', () =>",
+          "    pm.expect(b.status).to.eql(pm.response.code >= 200 && pm.response.code < 300));",
+          "}"
+        ]
+      }
+    }
+  ],
+  "item": [
+    {
+      "name": "Phase 0 — Auth",
+      "description": "US-ACC-01 (register + OTP), US-ACC-02 (account type), US-ACC-07 (login/logout/recovery), SEC-NFR-02. All requests here are public except `me`, `logout`, `account-type`.",
+      "item": [
+        {
+          "name": "OTP request",
+          "request": {
+            "auth": { "type": "noauth" },
+            "method": "POST",
+            "header": [
+              { "key": "Accept", "value": "application/json" },
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Accept-Language", "value": "{{locale}}" }
+            ],
+            "url": { "raw": "{{base_url}}/auth/otp/request", "host": ["{{base_url}}"], "path": ["auth", "otp", "request"] },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"phone\": \"{{phone_buyer}}\",\n  \"purpose\": \"{{otp_purpose}}\"\n}"
+            },
+            "description": "US-ACC-01 · public · Sends a 6-digit OTP (hashed at rest, never returned). Throttled 3/min per phone (429/4290). `purpose=registration` for a new phone; an existing phone → 409/4091. `purpose=password_reset` for an unknown phone → 200 with empty body (enumeration-safe).\n\n**Dev note:** the `log` OTP driver does not emit the code. Set `{{otp_code}}` manually (see RUNBOOK §3) before running *OTP verify*."
+          },
+          "response": [
+            {
+              "name": "200 — code sent",
+              "originalRequest": {
+                "method": "POST",
+                "header": [],
+                "url": { "raw": "{{base_url}}/auth/otp/request", "host": ["{{base_url}}"], "path": ["auth", "otp", "request"] },
+                "body": { "mode": "raw", "raw": "{ \"phone\": \"01000000001\", \"purpose\": \"registration\" }" }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n  \"custom_code\": 2000,\n  \"status\": true,\n  \"message\": \"A verification code has been sent.\",\n  \"body\": {},\n  \"info\": \"from response action\"\n}"
+            },
+            {
+              "name": "409 — phone already registered",
+              "originalRequest": {
+                "method": "POST",
+                "header": [],
+                "url": { "raw": "{{base_url}}/auth/otp/request", "host": ["{{base_url}}"], "path": ["auth", "otp", "request"] },
+                "body": { "mode": "raw", "raw": "{ \"phone\": \"01000000001\", \"purpose\": \"registration\" }" }
+              },
+              "status": "Conflict",
+              "code": 409,
+              "_postman_previewlanguage": "json",
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n  \"custom_code\": 4091,\n  \"status\": false,\n  \"message\": \"This phone number is already registered. Please log in.\",\n  \"body\": { \"phone\": [\"This phone number is already registered. Please log in.\"] },\n  \"info\": \"from ApiException response\"\n}"
+            }
+          ]
+        },
+        {
+          "name": "OTP verify",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const b = pm.response.json().body || {};",
+                  "if (b.registration_token) { pm.environment.set('registration_token', b.registration_token); }",
+                  "if (b.reset_token) { pm.environment.set('reset_token', b.reset_token); }",
+                  "pm.test('handoff token captured', () =>",
+                  "  pm.expect(b.registration_token || b.reset_token).to.be.a('string'));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": { "type": "noauth" },
+            "method": "POST",
+            "header": [
+              { "key": "Accept", "value": "application/json" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "url": { "raw": "{{base_url}}/auth/otp/verify", "host": ["{{base_url}}"], "path": ["auth", "otp", "verify"] },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"phone\": \"{{phone_buyer}}\",\n  \"code\": \"{{otp_code}}\",\n  \"purpose\": \"{{otp_purpose}}\"\n}"
+            },
+            "description": "US-ACC-01 · public · Verifies the OTP. Throttled 5/min per phone. 3 wrong codes lock the request (422/4221). On success returns `body.registration_token` **or** `body.reset_token` (per `purpose`); the test script saves it to the environment."
+          },
+          "response": [
+            {
+              "name": "200 — verified (registration)",
+              "originalRequest": { "method": "POST", "header": [], "url": { "raw": "{{base_url}}/auth/otp/verify", "host": ["{{base_url}}"], "path": ["auth", "otp", "verify"] } },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n  \"custom_code\": 2000,\n  \"status\": true,\n  \"message\": \"Phone number verified.\",\n  \"body\": { \"registration_token\": \"eyJpdiI6Ii4uLiJ9...\" },\n  \"info\": \"from response action\"\n}"
+            }
+          ]
+        },
+        {
+          "name": "Register",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const b = pm.response.json().body || {};",
+                  "if (b.token) {",
+                  "  pm.environment.set('token', b.token);",
+                  "  pm.environment.set('token_buyer', b.token);",
+                  "}",
+                  "pm.test('201 created + bearer token', () => {",
+                  "  pm.response.to.have.status(201);",
+                  "  pm.expect(b.token).to.be.a('string');",
+                  "});",
+                  "pm.test('starts in pending_type_selection', () =>",
+                  "  pm.expect(b.user.status).to.eql('pending_type_selection'));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": { "type": "noauth" },
+            "method": "POST",
+            "header": [
+              { "key": "Accept", "value": "application/json" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "url": { "raw": "{{base_url}}/auth/register", "host": ["{{base_url}}"], "path": ["auth", "register"] },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"registration_token\": \"{{registration_token}}\",\n  \"password\": \"{{password}}\",\n  \"password_confirmation\": \"{{password}}\",\n  \"email\": null,\n  \"language\": \"en\"\n}"
+            },
+            "description": "US-ACC-01, BR-ACC-01 · public · Creates the account from a valid `registration_token`. Bad/expired token → 422/4224. Phone already a user → 409/4091. Email optional, unique when given. Returns **HTTP 201** with the Sanctum bearer `body.token` (saved by the test script) and `next_onboarding_step: account_type_selection`."
+          },
+          "response": []
+        },
+        {
+          "name": "Login",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const b = pm.response.json().body || {};",
+                  "if (b.token) { pm.environment.set('token', b.token); }",
+                  "pm.test('200 + token', () => {",
+                  "  pm.response.to.have.status(200);",
+                  "  pm.expect(b.token).to.be.a('string');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": { "type": "noauth" },
+            "method": "POST",
+            "header": [
+              { "key": "Accept", "value": "application/json" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "url": { "raw": "{{base_url}}/auth/login", "host": ["{{base_url}}"], "path": ["auth", "login"] },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"phone\": \"{{phone_buyer}}\",\n  \"password\": \"{{password}}\"\n}"
+            },
+            "description": "US-ACC-07 · public · Phone + password → bearer token. Throttled 5/min per phone+IP (429/4290). Wrong phone **or** password → 422/4222 (`body.phone`, generic message — no user enumeration). Returns `body.next_onboarding_step` (`account_type_selection` | `business_profile` | `none`)."
+          },
+          "response": []
+        },
+        {
+          "name": "Password reset",
+          "request": {
+            "auth": { "type": "noauth" },
+            "method": "POST",
+            "header": [
+              { "key": "Accept", "value": "application/json" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "url": { "raw": "{{base_url}}/auth/password/reset", "host": ["{{base_url}}"], "path": ["auth", "password", "reset"] },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"reset_token\": \"{{reset_token}}\",\n  \"password\": \"{{password}}\",\n  \"password_confirmation\": \"{{password}}\"\n}"
+            },
+            "description": "US-ACC-07 · public · Requires a `reset_token` from *OTP verify* with `purpose=password_reset`. Bad/expired token → 422/4224. On success **all** the user's bearer tokens are revoked."
+          },
+          "response": []
+        },
+        {
+          "name": "Account types (catalog)",
+          "request": {
+            "auth": { "type": "noauth" },
+            "method": "GET",
+            "header": [
+              { "key": "Accept", "value": "application/json" },
+              { "key": "Accept-Language", "value": "{{locale}}" }
+            ],
+            "url": { "raw": "{{base_url}}/auth/account-types", "host": ["{{base_url}}"], "path": ["auth", "account-types"] },
+            "description": "US-ACC-02 · public · Lists the 4 account types with bilingual `label`/`description` (follows `Accept-Language`) and `requires_business_profile` (false only for `customer`)."
+          },
+          "response": []
+        },
+        {
+          "name": "Me",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Accept", "value": "application/json" }],
+            "url": { "raw": "{{base_url}}/auth/me", "host": ["{{base_url}}"], "path": ["auth", "me"] },
+            "description": "US-ACC-07 · `auth:sanctum` · Current user: `id, phone, email, account_type, status, language`."
+          },
+          "response": []
+        },
+        {
+          "name": "Account type — choose",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Accept", "value": "application/json" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "url": { "raw": "{{base_url}}/auth/account-type", "host": ["{{base_url}}"], "path": ["auth", "account-type"] },
+            "body": { "mode": "raw", "raw": "{\n  \"account_type\": \"wholesaler\"\n}" },
+            "description": "US-ACC-02, BR-ACC-02 · `auth:sanctum` · One-time choice; sets `status = active`. Already chosen → 409/4092. Use `wholesaler`/`retailer` to act as a buyer in later folders; `importer` to act as a seller."
+          },
+          "response": []
+        },
+        {
+          "name": "Logout",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Accept", "value": "application/json" }],
+            "url": { "raw": "{{base_url}}/auth/logout", "host": ["{{base_url}}"], "path": ["auth", "logout"] },
+            "description": "US-ACC-07 · `auth:sanctum` · Revokes the current access token only."
+          },
+          "response": []
+        }
+      ]
+    },
+
+    {
+      "name": "Phase 1 — Business Profile / Verification / Audit",
+      "description": "US-ACC-03/04/05, US-ADM-01, US-ADM-09, SEC-NFR-01/03/05. Business endpoints need a `wholesaler`/`retailer`/`importer` token; admin endpoints need an `admin` role token (`{{token_admin}}`).",
+      "item": [
+        {
+          "name": "Create business profile",
+          "event": [
+            { "listen": "test", "script": { "type": "text/javascript", "exec": [
+              "const b = pm.response.json().body || {};",
+              "if (b.business && b.business.id) {",
+              "  pm.environment.set('business_id', b.business.id);",
+              "  pm.environment.set('seller_business_id', b.business.id);",
+              "}"
+            ] } }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Accept", "value": "application/json" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "url": { "raw": "{{base_url}}/businesses", "host": ["{{base_url}}"], "path": ["businesses"] },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"company_name\": \"Nile Textiles Co.\",\n  \"activity\": \"Cotton fabric import\",\n  \"governorate_id\": {{governorate_id}},\n  \"address\": \"12 El-Geish St, Cairo\",\n  \"contact_person\": \"Sara Ahmed\",\n  \"contact_channels\": [\n    { \"type\": \"whatsapp\", \"value\": \"+201000000002\" }\n  ]\n}"
+            },
+            "description": "US-ACC-03, BR-ACC-03 · `auth:sanctum`, importer/wholesaler/retailer, no profile yet · Creates the profile in `unverified` status. `governorate_id` must exist in `/taxonomy/governorates`. Customer → 422 `body.account_type`. Second profile → 422 `body.user_id`. Returns **HTTP 201**."
+          },
+          "response": [
+            {
+              "name": "201 — created",
+              "originalRequest": { "method": "POST", "header": [], "url": { "raw": "{{base_url}}/businesses", "host": ["{{base_url}}"], "path": ["businesses"] } },
+              "status": "Created",
+              "code": 201,
+              "_postman_previewlanguage": "json",
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n  \"custom_code\": 2000,\n  \"status\": true,\n  \"message\": \"Business profile created.\",\n  \"body\": {\n    \"business\": {\n      \"id\": 1,\n      \"company_name\": \"Nile Textiles Co.\",\n      \"activity\": \"Cotton fabric import\",\n      \"governorate_id\": 1,\n      \"verified\": false,\n      \"address\": \"12 El-Geish St, Cairo\",\n      \"contact_person\": \"Sara Ahmed\",\n      \"contact_channels\": [{ \"type\": \"whatsapp\", \"value\": \"+201000000002\" }],\n      \"verification_status\": \"unverified\",\n      \"onboarded_by_admin\": false,\n      \"created_at\": \"2026-09-06T12:00:00.000000Z\",\n      \"updated_at\": \"2026-09-06T12:00:00.000000Z\"\n    }\n  },\n  \"info\": \"from response action\"\n}"
+            }
+          ]
+        },
+        {
+          "name": "Get business profile",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Accept", "value": "application/json" }],
+            "url": { "raw": "{{base_url}}/businesses/{{business_id}}", "host": ["{{base_url}}"], "path": ["businesses", "{{business_id}}"] },
+            "description": "US-ACC-03/05 · `auth:sanctum` · No authorize gate — any authed user reads the **public subset** (`id, company_name, activity, governorate_id, verified`). Owner/admin additionally see address, contact person, contact channels, verification status, timestamps."
+          },
+          "response": []
+        },
+        {
+          "name": "Update business profile",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              { "key": "Accept", "value": "application/json" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "url": { "raw": "{{base_url}}/businesses/{{business_id}}", "host": ["{{base_url}}"], "path": ["businesses", "{{business_id}}"] },
+            "body": { "mode": "raw", "raw": "{\n  \"company_name\": \"Nile Textiles Trading Co.\"\n}" },
+            "description": "US-ACC-03 · `auth:sanctum`, owner or admin (else native 403) · Partial update; every scalar field is `sometimes`."
+          },
+          "response": []
+        },
+        {
+          "name": "Upload verification document",
+          "event": [
+            { "listen": "test", "script": { "type": "text/javascript", "exec": [
+              "const b = pm.response.json().body || {};",
+              "if (b.document) {",
+              "  pm.environment.set('document_id', b.document.id);",
+              "  pm.environment.set('download_url', b.document.download_url);",
+              "}"
+            ] } }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Accept", "value": "application/json" }],
+            "url": {
+              "raw": "{{base_url}}/businesses/{{business_id}}/verification-documents",
+              "host": ["{{base_url}}"],
+              "path": ["businesses", "{{business_id}}", "verification-documents"]
+            },
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                { "key": "document_type_id", "value": "{{document_type_id}}", "type": "text" },
+                { "key": "file", "type": "file", "src": [], "description": "PDF/JPG/PNG per config verification.accepted_mimes; size ≤ verification.max_file_size_kb" }
+              ]
+            },
+            "description": "US-ACC-04, SEC-NFR-05 · `auth:sanctum`, owner, business not yet verified (else native 403) · Validates extension **and** MIME **and** size. Stored on the private `verification` disk. Response `body.document.download_url` is a temporary **signed** URL (saved to `{{download_url}}`)."
+          },
+          "response": []
+        },
+        {
+          "name": "Download verification document (signed URL)",
+          "request": {
+            "auth": { "type": "noauth" },
+            "method": "GET",
+            "header": [{ "key": "Accept", "value": "application/json" }],
+            "url": { "raw": "{{download_url}}", "host": ["{{download_url}}"] },
+            "description": "US-ACC-04, SEC-NFR-01 · `auth:sanctum` + `signed` · Paste-through of the `download_url` returned by *Upload*. Streams the raw file. Bad/absent signature → 403; wrong business for the document → 404. (The signature already encodes auth context; keep the bearer header too when testing as the owner.)"
+          },
+          "response": []
+        },
+        {
+          "name": "Submit verification request",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Accept", "value": "application/json" }],
+            "url": {
+              "raw": "{{base_url}}/businesses/{{business_id}}/verification-request",
+              "host": ["{{base_url}}"],
+              "path": ["businesses", "{{business_id}}", "verification-request"]
+            },
+            "description": "US-ACC-04 · `auth:sanctum`, owner only (admin cannot) · No body. Zero documents → 422 `body.documents`. On success business → `Pending`, event `VerificationSubmitted`."
+          },
+          "response": []
+        },
+        {
+          "name": "Verification status",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Accept", "value": "application/json" }],
+            "url": {
+              "raw": "{{base_url}}/businesses/{{business_id}}/verification-status",
+              "host": ["{{base_url}}"],
+              "path": ["businesses", "{{business_id}}", "verification-status"]
+            },
+            "description": "US-ACC-04/05 · `auth:sanctum`, owner or admin · `verification_status`, `verified`, `rejection_reason`, `reviewed_at`, `documents[]`."
+          },
+          "response": []
+        },
+        {
+          "name": "Admin — verification queue",
+          "event": [
+            { "listen": "test", "script": { "type": "text/javascript", "exec": [
+              "const d = ((pm.response.json().body || {}).verification_requests || {}).data || [];",
+              "if (d.length) { pm.environment.set('verification_request_id', d[0].id); }"
+            ] } }
+          ],
+          "request": {
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{token_admin}}", "type": "string" }] },
+            "method": "GET",
+            "header": [{ "key": "Accept", "value": "application/json" }],
+            "url": { "raw": "{{base_url}}/admin/verification-requests", "host": ["{{base_url}}"], "path": ["admin", "verification-requests"] },
+            "description": "US-ADM-01 · `auth:sanctum`, **admin** · Paginated queue of pending + submitted requests, newest first. Non-admin → 403."
+          },
+          "response": []
+        },
+        {
+          "name": "Admin — approve verification",
+          "request": {
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{token_admin}}", "type": "string" }] },
+            "method": "POST",
+            "header": [{ "key": "Accept", "value": "application/json" }],
+            "url": {
+              "raw": "{{base_url}}/admin/verification-requests/{{verification_request_id}}/approve",
+              "host": ["{{base_url}}"],
+              "path": ["admin", "verification-requests", "{{verification_request_id}}", "approve"]
+            },
+            "description": "US-ADM-01, US-ADM-09, BR-ADM-01 · **admin** · No body. Request not pending/submitted → 409/4092. On success: business → `Verified`, audit row `verification.approved`, event `VerificationApproved`."
+          },
+          "response": []
+        },
+        {
+          "name": "Admin — reject verification",
+          "request": {
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{token_admin}}", "type": "string" }] },
+            "method": "POST",
+            "header": [
+              { "key": "Accept", "value": "application/json" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "url": {
+              "raw": "{{base_url}}/admin/verification-requests/{{verification_request_id}}/reject",
+              "host": ["{{base_url}}"],
+              "path": ["admin", "verification-requests", "{{verification_request_id}}", "reject"]
+            },
+            "body": { "mode": "raw", "raw": "{\n  \"reason\": \"Commercial register is illegible — please re-upload a clear scan.\"\n}" },
+            "description": "US-ADM-01, US-ADM-09, BR-ADM-01 · **admin** · `reason` required (3–1000 chars) → else 400 `body.reason`. On success: business → `Rejected`, audit row `verification.rejected`, event `VerificationRejected`. Owner may then re-upload."
+          },
+          "response": []
+        }
+      ]
+    },
+
+    {
+      "name": "Phase 2 — Subscriptions",
+      "description": "US-SUB-01..08, BR-SUB-01/02/03, SEC-NFR-04. Needs a token for a user who owns a business profile. NOTE: `POST`/`PATCH /subscriptions` return **Laravel-native 422** `{message,errors}` on validation error, not the envelope (discrepancy D5).",
+      "item": [
+        {
+          "name": "List plans",
+          "event": [
+            { "listen": "test", "script": { "type": "text/javascript", "exec": [
+              "const p = (pm.response.json().body || {}).plans || [];",
+              "if (p.length) {",
+              "  pm.environment.set('plan_id', p[0].id);",
+              "  if (p[1]) pm.environment.set('plan_id_upgrade', p[1].id);",
+              "}"
+            ] } }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Accept", "value": "application/json" }],
+            "url": {
+              "raw": "{{base_url}}/subscription-plans?account_type=wholesaler",
+              "host": ["{{base_url}}"],
+              "path": ["subscription-plans"],
+              "query": [{ "key": "account_type", "value": "wholesaler", "description": "optional filter: importer | wholesaler | retailer" }]
+            },
+            "description": "US-SUB-01/02 · `auth:sanctum` · Active plans (optionally filtered by account type), each with its `entitlements: [{key,value}]`. `price` may be null."
+          },
+          "response": []
+        },
+        {
+          "name": "Subscribe",
+          "event": [
+            { "listen": "test", "script": { "type": "text/javascript", "exec": [
+              "const s = (pm.response.json().body || {}).subscription;",
+              "if (s) { pm.environment.set('subscription_id', s.id); }"
+            ] } }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Accept", "value": "application/json" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "url": { "raw": "{{base_url}}/subscriptions", "host": ["{{base_url}}"], "path": ["subscriptions"] },
+            "body": { "mode": "raw", "raw": "{\n  \"plan_id\": {{plan_id}},\n  \"trial_ends_at\": null\n}" },
+            "description": "US-SUB-05/07, BR-SUB-01 · `auth:sanctum`, must own a business profile (else native 403) · Existing active subscription → 409/4091. Plan's `account_type` ≠ caller's → 422/4222. Pass `trial_ends_at` (future date) for a no-payment trial. Returns **HTTP 201**."
+          },
+          "response": []
+        },
+        {
+          "name": "Show subscription",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Accept", "value": "application/json" }],
+            "url": { "raw": "{{base_url}}/subscriptions/{{subscription_id}}", "host": ["{{base_url}}"], "path": ["subscriptions", "{{subscription_id}}"] },
+            "description": "US-SUB-04 · `auth:sanctum`, owner or admin (else **403/4031**) · Plan + entitlements (as `{key:value}`), status, period end, trial state."
+          },
+          "response": []
+        },
+        {
+          "name": "Subscription usage",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Accept", "value": "application/json" }],
+            "url": {
+              "raw": "{{base_url}}/subscriptions/{{subscription_id}}/usage",
+              "host": ["{{base_url}}"],
+              "path": ["subscriptions", "{{subscription_id}}", "usage"]
+            },
+            "description": "US-SUB-04 · owner or admin · `usage: { <entitlement_key>: { limit, current } }` + renewal date. `current` is null for non-counter entitlements. (No billing history — depends on Payments, R4.)"
+          },
+          "response": []
+        },
+        {
+          "name": "Update subscription (upgrade / downgrade / cancel)",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              { "key": "Accept", "value": "application/json" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "url": { "raw": "{{base_url}}/subscriptions/{{subscription_id}}", "host": ["{{base_url}}"], "path": ["subscriptions", "{{subscription_id}}"] },
+            "body": { "mode": "raw", "raw": "{\n  \"action\": \"upgrade\",\n  \"plan_id\": {{plan_id_upgrade}}\n}" },
+            "description": "US-SUB-05, BR-SUB-02 · owner or admin (else 403/4031) · `action` = `upgrade` | `downgrade` | `cancel`; `plan_id` required for upgrade/downgrade. Non-active subscription → 422/4221.\n\n- **upgrade** → old row cancelled, new active row on the target plan (immediate).\n- **downgrade** → `notes.pending_plan_id` set; current row untouched until period end.\n- **cancel** → `notes.cancel_at_period_end = true`; current row untouched.\n\nDeferred actions apply via `php artisan subscriptions:process-period-ends`."
+          },
+          "response": []
+        }
+      ]
+    },
+
+    {
+      "name": "Phase 4 — Search",
+      "description": "US-SRC-01..11, BR-SRC-01/02. All public (`optional.sanctum`). Reads Catalog product data (**Partial / Phase 3 Pending** — seed/factory products only).",
+      "item": [
+        {
+          "name": "Search products",
+          "event": [
+            { "listen": "test", "script": { "type": "text/javascript", "exec": [
+              "const d = ((pm.response.json().body || {}).products || {}).data || [];",
+              "if (d.length) { pm.environment.set('product_id', d[0].id); }"
+            ] } }
+          ],
+          "request": {
+            "auth": { "type": "noauth" },
+            "method": "GET",
+            "header": [
+              { "key": "Accept", "value": "application/json" },
+              { "key": "Accept-Language", "value": "{{locale}}" }
+            ],
+            "url": {
+              "raw": "{{base_url}}/products?search=cotton&sort=relevance&page=1&per_page=20&filters[governorate_id]={{governorate_id}}&filters[price_min]=0&filters[availability]=1",
+              "host": ["{{base_url}}"],
+              "path": ["products"],
+              "query": [
+                { "key": "search", "value": "cotton", "description": "AR/EN, spelling-variant tolerant" },
+                { "key": "sort", "value": "relevance", "description": "relevance | price_asc | price_desc | newest | supplier_rating" },
+                { "key": "page", "value": "1" },
+                { "key": "per_page", "value": "20", "description": "1..50 (cap 50, default 20)" },
+                { "key": "filters[governorate_id]", "value": "{{governorate_id}}" },
+                { "key": "filters[price_min]", "value": "0" },
+                { "key": "filters[availability]", "value": "1", "description": "1 → quantity_available > 0" },
+                { "key": "filters[fabric_type_id]", "value": "", "disabled": true },
+                { "key": "filters[material_id]", "value": "", "disabled": true },
+                { "key": "filters[color_id][]", "value": "1", "disabled": true },
+                { "key": "filters[width_cm_min]", "value": "", "disabled": true },
+                { "key": "filters[width_cm_max]", "value": "", "disabled": true },
+                { "key": "filters[price_max]", "value": "", "disabled": true },
+                { "key": "filters[moq_max]", "value": "", "disabled": true },
+                { "key": "filters[business_account_id]", "value": "", "disabled": true }
+              ]
+            },
+            "description": "US-SRC-01/02/03/04/10, BR-SRC-01/02 · public · Paginated buyer-visible products. Featured items get a within-page boost (relevance/newest) and `featured: true`. Zero-result terms are logged to `search_logs`."
+          },
+          "response": [
+            {
+              "name": "200 — results",
+              "originalRequest": { "method": "GET", "header": [], "url": { "raw": "{{base_url}}/products?search=cotton", "host": ["{{base_url}}"], "path": ["products"], "query": [{ "key": "search", "value": "cotton" }] } },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n  \"custom_code\": 2000,\n  \"status\": true,\n  \"message\": \"Results retrieved.\",\n  \"body\": {\n    \"products\": {\n      \"data\": [\n        {\n          \"id\": 12,\n          \"name_ar\": \"قطن مصري\",\n          \"name_en\": \"Egyptian cotton\",\n          \"price\": \"85.00\",\n          \"price_on_contact\": false,\n          \"currency\": \"EGP\",\n          \"unit\": \"meter\",\n          \"moq\": 100,\n          \"quantity_available\": 5000,\n          \"featured\": true,\n          \"fabric_type\": \"Cotton\",\n          \"governorate\": \"Cairo\",\n          \"primary_image\": \"http://127.0.0.1:8000/storage/products/12/a.jpg\",\n          \"supplier\": { \"id\": 3, \"company_name\": \"Nile Textiles Co.\", \"verified\": true }\n        }\n      ],\n      \"links\": { \"first\": \"...\", \"last\": \"...\", \"prev\": null, \"next\": null },\n      \"meta\": { \"current_page\": 1, \"per_page\": 20, \"total\": 1, \"last_page\": 1 }\n    }\n  },\n  \"info\": \"from response action\"\n}"
+            }
+          ]
+        },
+        {
+          "name": "Product detail",
+          "request": {
+            "auth": { "type": "noauth" },
+            "method": "GET",
+            "header": [{ "key": "Accept", "value": "application/json" }],
+            "url": { "raw": "{{base_url}}/products/{{product_id}}", "host": ["{{base_url}}"], "path": ["products", "{{product_id}}"] },
+            "description": "US-SRC-05 · public · Full spec + `price_tiers[]` + `media[]` + supplier identity/badge + `actions.contact` / `actions.request_quotation`. A non-buyer-visible product returns **404** (never 403). Internal fields (`status`, `rejection_reason`) are omitted."
+          },
+          "response": []
+        },
+        {
+          "name": "Supplier search",
+          "request": {
+            "auth": { "type": "noauth" },
+            "method": "GET",
+            "header": [{ "key": "Accept", "value": "application/json" }],
+            "url": {
+              "raw": "{{base_url}}/businesses?search=textiles&filters[governorate_id]={{governorate_id}}&filters[verification_status]=verified",
+              "host": ["{{base_url}}"],
+              "path": ["businesses"],
+              "query": [
+                { "key": "search", "value": "textiles" },
+                { "key": "filters[governorate_id]", "value": "{{governorate_id}}" },
+                { "key": "filters[verification_status]", "value": "verified", "description": "a VerificationStatus value" },
+                { "key": "filters[specialty]", "value": "", "description": "free text on activity", "disabled": true },
+                { "key": "per_page", "value": "20", "disabled": true }
+              ]
+            },
+            "description": "US-SRC-07, US-SRC-10 · public · Business accounts only (customers never appear); suspended-owner suppliers excluded. Featured suppliers boosted + `featured: true`."
+          },
+          "response": []
+        },
+        {
+          "name": "Supplier catalog",
+          "request": {
+            "auth": { "type": "noauth" },
+            "method": "GET",
+            "header": [{ "key": "Accept", "value": "application/json" }],
+            "url": {
+              "raw": "{{base_url}}/businesses/{{seller_business_id}}/catalog?sort=newest&per_page=20",
+              "host": ["{{base_url}}"],
+              "path": ["businesses", "{{seller_business_id}}", "catalog"],
+              "query": [
+                { "key": "sort", "value": "newest" },
+                { "key": "per_page", "value": "20" }
+              ]
+            },
+            "description": "US-SRC-06 · public · Same filter/sort/pagination contract as *Search products*, scoped to one business. No zero-result logging."
+          },
+          "response": []
+        }
+      ]
+    },
+
+    {
+      "name": "Phase 5 — Favorites / Comparison",
+      "description": "US-SRC-08/09, US-BUY-02/05, BR-FAV-01, BR-CMP-01. All `auth:sanctum`. Operate on product ids (from the Search folder) and supplier ids.",
+      "item": [
+        {
+          "name": "Add favorite",
+          "event": [
+            { "listen": "test", "script": { "type": "text/javascript", "exec": [
+              "const f = (pm.response.json().body || {}).favorite;",
+              "if (f) { pm.environment.set('favorite_id', f.id); }",
+              "pm.test('201 first time / 200 if already saved', () =>",
+              "  pm.expect([200, 201]).to.include(pm.response.code));"
+            ] } }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Accept", "value": "application/json" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "url": { "raw": "{{base_url}}/favorites", "host": ["{{base_url}}"], "path": ["favorites"] },
+            "body": { "mode": "raw", "raw": "{\n  \"type\": \"product\",\n  \"id\": {{product_id}}\n}" },
+            "description": "US-SRC-08, BR-FAV-01 · `auth:sanctum` · `type` = `product` | `supplier`. First save → **201**; saving the same item again → **200** (idempotent, same row). Missing/non-visible target → **404** (`custom_code 4040`)."
+          },
+          "response": []
+        },
+        {
+          "name": "List favorites",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Accept", "value": "application/json" }],
+            "url": {
+              "raw": "{{base_url}}/favorites?type=product",
+              "host": ["{{base_url}}"],
+              "path": ["favorites"],
+              "query": [{ "key": "type", "value": "product", "description": "optional: product | supplier" }]
+            },
+            "description": "US-SRC-08, US-BUY-02 · `auth:sanctum` · Self-scoped, newest first, paginated. Each entry's `item` is the matching search card."
+          },
+          "response": []
+        },
+        {
+          "name": "Remove favorite",
+          "request": {
+            "method": "DELETE",
+            "header": [{ "key": "Accept", "value": "application/json" }],
+            "url": { "raw": "{{base_url}}/favorites/{{favorite_id}}", "host": ["{{base_url}}"], "path": ["favorites", "{{favorite_id}}"] },
+            "description": "US-SRC-08 · `auth:sanctum`, owner only (else 403) · Deletes by favorite id (no toggle-by-target endpoint)."
+          },
+          "response": []
+        },
+        {
+          "name": "Compare",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Accept", "value": "application/json" }],
+            "url": {
+              "raw": "{{base_url}}/compare?type=product&ids={{compare_ids}}",
+              "host": ["{{base_url}}"],
+              "path": ["compare"],
+              "query": [
+                { "key": "type", "value": "product", "description": "product | supplier" },
+                { "key": "ids", "value": "{{compare_ids}}", "description": "up to 4, comma-separated or ids[]; de-duplicated" }
+              ]
+            },
+            "description": "US-SRC-09, US-BUY-05, BR-CMP-01 · `auth:sanctum` · On-demand, no storage. A 5th id → **400** with a message naming the limit \"4\". Unknown / non-visible ids come back in `missing_ids`. Products → detail shape; suppliers → card shape."
+          },
+          "response": []
+        }
+      ]
+    },
+
+    {
+      "name": "Phase 6 — Inquiries / RFQ / Quotation / Reporting",
+      "description": "US-INQ-01..09, US-ANL-03, BR-INQ-01/02. All `auth:sanctum`. Buyer actions need a `wholesaler`/`retailer` token (`{{token_buyer}}`); seller actions need the addressed business's owner token (`{{token_seller}}`).",
+      "item": [
+        {
+          "name": "Send inquiry",
+          "event": [
+            { "listen": "test", "script": { "type": "text/javascript", "exec": [
+              "const i = (pm.response.json().body || {}).inquiry;",
+              "if (i) { pm.environment.set('inquiry_id', i.id); }"
+            ] } }
+          ],
+          "request": {
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{token_buyer}}", "type": "string" }] },
+            "method": "POST",
+            "header": [
+              { "key": "Accept", "value": "application/json" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "url": { "raw": "{{base_url}}/inquiries", "host": ["{{base_url}}"], "path": ["inquiries"] },
+            "body": { "mode": "raw", "raw": "{\n  \"product_id\": {{product_id}},\n  \"seller_business_id\": {{seller_business_id}},\n  \"message\": \"Interested in 500m of this cotton — can you supply?\"\n}" },
+            "description": "US-INQ-01, BR-INQ-01/02 · `auth:sanctum`, wholesaler/retailer (else 403) · Provide `product_id` and/or `seller_business_id` (at least one). Rate-limited per user (429/4290). Seller past `inquiry_limit` → 422/4231 (`body.inquiry_limit`). Creates a Lead in `new` status. **HTTP 201**."
+          },
+          "response": [
+            {
+              "name": "201 — inquiry sent",
+              "originalRequest": { "method": "POST", "header": [], "url": { "raw": "{{base_url}}/inquiries", "host": ["{{base_url}}"], "path": ["inquiries"] } },
+              "status": "Created",
+              "code": 201,
+              "_postman_previewlanguage": "json",
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n  \"custom_code\": 2000,\n  \"status\": true,\n  \"message\": \"Inquiry sent.\",\n  \"body\": {\n    \"inquiry\": {\n      \"id\": 7,\n      \"buyer_id\": 2,\n      \"seller_business_id\": 3,\n      \"product_id\": 12,\n      \"message\": \"Interested in 500m of this cotton — can you supply?\",\n      \"lead_status\": \"new\",\n      \"created_at\": \"2026-09-06T12:00:00.000000Z\",\n      \"updated_at\": \"2026-09-06T12:00:00.000000Z\"\n    }\n  },\n  \"info\": \"from response action\"\n}"
+            },
+            {
+              "name": "422 — seller inquiry limit reached",
+              "originalRequest": { "method": "POST", "header": [], "url": { "raw": "{{base_url}}/inquiries", "host": ["{{base_url}}"], "path": ["inquiries"] } },
+              "status": "Unprocessable Entity",
+              "code": 422,
+              "_postman_previewlanguage": "json",
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n  \"custom_code\": 4231,\n  \"status\": false,\n  \"message\": \"This supplier is not accepting new inquiries right now.\",\n  \"body\": { \"inquiry_limit\": [\"This supplier is not accepting new inquiries right now.\"] },\n  \"info\": \"from ApiException response\"\n}"
+            }
+          ]
+        },
+        {
+          "name": "List inquiries (leads screen)",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Accept", "value": "application/json" }],
+            "url": {
+              "raw": "{{base_url}}/inquiries?role=seller&lead_status=new",
+              "host": ["{{base_url}}"],
+              "path": ["inquiries"],
+              "query": [
+                { "key": "role", "value": "seller", "description": "buyer (default) | seller" },
+                { "key": "lead_status", "value": "new", "description": "new | in_progress | done | not_completed" }
+              ]
+            },
+            "description": "US-INQ-06/07, US-ANL-03 · `auth:sanctum` · The Lead Management screen. `role=seller` → the caller's business's leads (empty if no business profile); `role=buyer` → the caller's sent inquiries. There is no separate `/businesses/{id}/leads` route."
+          },
+          "response": []
+        },
+        {
+          "name": "Show inquiry",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Accept", "value": "application/json" }],
+            "url": { "raw": "{{base_url}}/inquiries/{{inquiry_id}}", "host": ["{{base_url}}"], "path": ["inquiries", "{{inquiry_id}}"] },
+            "description": "US-INQ-01 · `auth:sanctum`, party to the inquiry (else 403)."
+          },
+          "response": []
+        },
+        {
+          "name": "Update lead status",
+          "request": {
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{token_seller}}", "type": "string" }] },
+            "method": "PATCH",
+            "header": [
+              { "key": "Accept", "value": "application/json" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "url": { "raw": "{{base_url}}/inquiries/{{inquiry_id}}", "host": ["{{base_url}}"], "path": ["inquiries", "{{inquiry_id}}"] },
+            "body": { "mode": "raw", "raw": "{\n  \"lead_status\": \"in_progress\"\n}" },
+            "description": "US-INQ-07 · `auth:sanctum`, **the seller only** (else 403) · `lead_status` ∈ {new, in_progress, done, not_completed}. Spec §11 names this `PATCH /inquiries/{id}/status`; the implemented path has no `/status` segment."
+          },
+          "response": []
+        },
+        {
+          "name": "Submit RFQ",
+          "event": [
+            { "listen": "test", "script": { "type": "text/javascript", "exec": [
+              "const r = (pm.response.json().body || {}).rfq;",
+              "if (r) { pm.environment.set('rfq_id', r.id); }"
+            ] } }
+          ],
+          "request": {
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{token_buyer}}", "type": "string" }] },
+            "method": "POST",
+            "header": [
+              { "key": "Accept", "value": "application/json" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "url": { "raw": "{{base_url}}/inquiries/{{inquiry_id}}/rfqs", "host": ["{{base_url}}"], "path": ["inquiries", "{{inquiry_id}}", "rfqs"] },
+            "body": { "mode": "raw", "raw": "{\n  \"product_id\": {{product_id}},\n  \"quantity\": 500,\n  \"color_id\": {{color_id}},\n  \"needed_by_date\": \"2026-12-01\"\n}" },
+            "description": "US-INQ-02 · `auth:sanctum`, the inquiry's buyer (else 403) · `product_id` must belong to the inquiry's seller. `needed_by_date` must be today or later. Quantity below the product MOQ → `below_moq: true` (a warning, still **201**). Shares the rate-limit + `inquiry_limit` re-check with *Send inquiry* (no re-increment). Spec §11 names this `.../rfq` (singular)."
+          },
+          "response": []
+        },
+        {
+          "name": "Get RFQ (with quotations)",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Accept", "value": "application/json" }],
+            "url": { "raw": "{{base_url}}/rfqs/{{rfq_id}}", "host": ["{{base_url}}"], "path": ["rfqs", "{{rfq_id}}"] },
+            "description": "US-INQ-02/03 · `auth:sanctum`, party to the RFQ (else 403) · Quotations inlined; each carries `expired` computed from `valid_until`."
+          },
+          "response": []
+        },
+        {
+          "name": "Reply with quotation",
+          "request": {
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{token_seller}}", "type": "string" }] },
+            "method": "POST",
+            "header": [
+              { "key": "Accept", "value": "application/json" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "url": { "raw": "{{base_url}}/rfqs/{{rfq_id}}/quotations", "host": ["{{base_url}}"], "path": ["rfqs", "{{rfq_id}}", "quotations"] },
+            "body": { "mode": "raw", "raw": "{\n  \"price\": 82.5,\n  \"availability_note\": \"In stock, 2-week lead time\",\n  \"valid_until\": \"2026-10-15T00:00:00Z\"\n}" },
+            "description": "US-INQ-03 · `auth:sanctum`, **the RFQ's addressed seller only** (else 403) · `valid_until` must be in the future. Event `QuotationReceived`. **HTTP 201**."
+          },
+          "response": []
+        },
+        {
+          "name": "Report an inquiry",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Accept", "value": "application/json" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "url": { "raw": "{{base_url}}/inquiries/{{inquiry_id}}/reports", "host": ["{{base_url}}"], "path": ["inquiries", "{{inquiry_id}}", "reports"] },
+            "body": { "mode": "raw", "raw": "{\n  \"reason\": \"Abusive language in the message thread.\"\n}" },
+            "description": "US-INQ-09 · `auth:sanctum`, either party to the inquiry (else 403) · Durable record only — no moderation workflow / admin queue yet (Phase 9). **HTTP 201**."
+          },
+          "response": []
+        }
+      ]
+    },
+
+    {
+      "name": "Taxonomy (public reads)",
+      "description": "Phase 1 / Phase 4 dependency. Public, no pagination, active rows only. Write verbs → 405.",
+      "item": [
+        {
+          "name": "Governorates",
+          "request": {
+            "auth": { "type": "noauth" },
+            "method": "GET",
+            "header": [
+              { "key": "Accept", "value": "application/json" },
+              { "key": "Accept-Language", "value": "{{locale}}" }
+            ],
+            "url": { "raw": "{{base_url}}/taxonomy/governorates", "host": ["{{base_url}}"], "path": ["taxonomy", "governorates"] },
+            "description": "27 Egyptian governorates: `id, slug, name (localized), name_ar, name_en`."
+          },
+          "response": []
+        },
+        {
+          "name": "Fabric types",
+          "request": {
+            "auth": { "type": "noauth" },
+            "method": "GET",
+            "header": [{ "key": "Accept", "value": "application/json" }],
+            "url": { "raw": "{{base_url}}/taxonomy/fabric-types", "host": ["{{base_url}}"], "path": ["taxonomy", "fabric-types"] },
+            "description": "Fabric-type terms for search filters."
+          },
+          "response": []
+        },
+        {
+          "name": "Materials",
+          "request": {
+            "auth": { "type": "noauth" },
+            "method": "GET",
+            "header": [{ "key": "Accept", "value": "application/json" }],
+            "url": { "raw": "{{base_url}}/taxonomy/materials", "host": ["{{base_url}}"], "path": ["taxonomy", "materials"] },
+            "description": "Material terms."
+          },
+          "response": []
+        },
+        {
+          "name": "Colors",
+          "request": {
+            "auth": { "type": "noauth" },
+            "method": "GET",
+            "header": [{ "key": "Accept", "value": "application/json" }],
+            "url": { "raw": "{{base_url}}/taxonomy/colors", "host": ["{{base_url}}"], "path": ["taxonomy", "colors"] },
+            "description": "Color terms — each carries a `hex` value."
+          },
+          "response": []
+        },
+        {
+          "name": "Units",
+          "request": {
+            "auth": { "type": "noauth" },
+            "method": "GET",
+            "header": [{ "key": "Accept", "value": "application/json" }],
+            "url": { "raw": "{{base_url}}/taxonomy/units", "host": ["{{base_url}}"], "path": ["taxonomy", "units"] },
+            "description": "Unit-of-measure terms."
+          },
+          "response": []
+        }
+      ]
+    }
+  ]
+}

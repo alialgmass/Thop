@@ -40,14 +40,26 @@ class ProductDetailResource extends JsonResource
             'colors' => $this->whenLoaded('colors', fn () => $this->colors->pluck('id', 'name_en')),
             'price_tiers' => ProductPriceTierResource::collection($this->whenLoaded('priceTiers')),
             'media' => ProductMediaResource::collection($this->whenLoaded('media')),
-            'supplier' => $this->whenLoaded('businessAccount', fn () => [
-                'id' => $this->businessAccount->id,
-                'company_name' => $this->businessAccount->company_name,
-                'governorate' => $this->businessAccount->relationLoaded('governorate')
-                    ? $this->businessAccount->governorate?->localizedName()
-                    : null,
-                'verified' => $this->businessAccount->isVerified(),
-            ]),
+            'supplier' => $this->whenLoaded('businessAccount', function () use ($request) {
+                $supplier = [
+                    'id' => $this->businessAccount->id,
+                    'company_name' => $this->businessAccount->company_name,
+                    'governorate' => $this->businessAccount->relationLoaded('governorate')
+                        ? $this->businessAccount->governorate?->localizedName()
+                        : null,
+                    'verified' => $this->businessAccount->isVerified(),
+                ];
+
+                // US-INQ-05: contact channels only when the seller's plan grants
+                // it (or the viewer is the owner/admin).
+                $channels = $this->businessAccount->contactChannelsVisibleTo($request->user());
+
+                if ($channels !== null) {
+                    $supplier['contact_channels'] = $channels;
+                }
+
+                return $supplier;
+            }),
             'actions' => [
                 'contact' => ['supplier_id' => $this->business_account_id, 'product_id' => $this->id],
                 'request_quotation' => ['supplier_id' => $this->business_account_id, 'product_id' => $this->id],

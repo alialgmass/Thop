@@ -2,6 +2,7 @@
 
 namespace Modules\Subscriptions\Models;
 
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -109,10 +110,26 @@ class Subscription extends Model
      * A subscription is only "active" when its status is Active AND its paid
      * period (and trial, if any) has not yet elapsed.
      */
-    public function scopeActiveForBusiness($query, int $businessAccountId)
+    /**
+     * @param  Builder<static>  $query
+     * @return Builder<static>
+     */
+    public function scopeActiveForBusiness(Builder $query, int $businessAccountId): Builder
     {
-        return $query->where('business_account_id', $businessAccountId)
-            ->where('status', SubscriptionStatus::Active)
+        return $query->where('business_account_id', $businessAccountId)->currentlyActive();
+    }
+
+    /**
+     * Status Active AND the paid period (and trial, if any) has not elapsed.
+     * The business-agnostic half of {@see scopeActiveForBusiness}, reused by the
+     * product-visibility gate (BR-SUB-03).
+     *
+     * @param  Builder<static>  $query
+     * @return Builder<static>
+     */
+    public function scopeCurrentlyActive(Builder $query): Builder
+    {
+        return $query->where('status', SubscriptionStatus::Active)
             ->where(fn ($period) => $period->whereNull('current_period_end')
                 ->orWhere('current_period_end', '>', now()))
             ->where(fn ($trial) => $trial->whereNull('trial_ends_at')

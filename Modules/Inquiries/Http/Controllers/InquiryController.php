@@ -47,6 +47,7 @@ class InquiryController extends Controller
         $user = $request->user();
         $role = InquiryParty::tryFrom((string) $request->query('role')) ?? InquiryParty::Buyer;
 
+        // Ordered by last activity — RFQs and quotations touch `updated_at` (US-ANL-03).
         $query = Inquiry::query()->latest('updated_at');
 
         if ($role === InquiryParty::Seller) {

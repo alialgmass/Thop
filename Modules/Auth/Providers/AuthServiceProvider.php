@@ -4,6 +4,7 @@ namespace Modules\Auth\Providers;
 
 use Illuminate\Http\Resources\Json\JsonResource;
 use Modules\Auth\Contracts\OtpSender;
+use Modules\Auth\Support\CaptureOtpSender;
 use Modules\Auth\Support\LogOtpSender;
 use Nwidart\Modules\Support\ModuleServiceProvider;
 
@@ -21,7 +22,16 @@ class AuthServiceProvider extends ModuleServiceProvider
      */
     private const OTP_DRIVERS = [
         'log' => LogOtpSender::class,
+        'capture' => CaptureOtpSender::class,
     ];
+
+    /**
+     * Drivers that may only run in local development or the test suite — never
+     * staging or production, where a real code would be cached in the clear.
+     *
+     * @var string[]
+     */
+    private const LOCAL_ONLY_DRIVERS = ['capture'];
 
     /**
      * Provider classes to register.
@@ -38,6 +48,10 @@ class AuthServiceProvider extends ModuleServiceProvider
 
         $this->app->singleton(OtpSender::class, function (): OtpSender {
             $driver = (string) config('auth.otp.driver', 'log');
+
+            if (in_array($driver, self::LOCAL_ONLY_DRIVERS, true) && ! $this->app->environment('local', 'testing')) {
+                throw new \RuntimeException("OTP driver [{$driver}] may only be used locally, not in [{$this->app->environment()}].");
+            }
 
             $sender = self::OTP_DRIVERS[$driver]
                 ?? throw new \InvalidArgumentException("Unknown OTP driver [{$driver}].");

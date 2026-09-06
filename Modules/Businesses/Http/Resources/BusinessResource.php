@@ -25,6 +25,12 @@ class BusinessResource extends JsonResource
         ];
 
         if (! $request->user()?->can('view', $this->resource)) {
+            $channels = $this->resource->contactChannelsVisibleTo($request->user());
+
+            if ($channels !== null) {
+                $public['contact_channels'] = $channels;
+            }
+
             return $public;
         }
 

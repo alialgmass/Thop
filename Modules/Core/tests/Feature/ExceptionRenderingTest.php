@@ -2,9 +2,11 @@
 
 namespace Modules\Core\Tests\Feature;
 
+use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Validation\ValidationException;
+use Modules\Core\Exceptions\Handler;
 use PHPUnit\Framework\Attributes\Test;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 use Tests\TestCase;
@@ -12,23 +14,54 @@ use Tests\TestCase;
 class ExceptionRenderingTest extends TestCase
 {
     #[Test]
-    public function a_missing_model_keeps_the_framework_not_found_handling(): void
+    public function a_missing_model_is_rendered_through_the_not_found_envelope(): void
     {
         Route::get('/core-test/exceptions/not-found', function () {
             throw (new ModelNotFoundException)->setModel('Modules\\Core\\Models\\StateLog');
         });
 
-        $this->getJson('/core-test/exceptions/not-found')->assertStatus(404);
+        $this->getJson('/core-test/exceptions/not-found')
+            ->assertStatus(404)
+            ->assertJsonPath('status', false)
+            ->assertJsonPath('custom_code', Handler::NOT_FOUND_CODE)
+            ->assertJsonPath('message', __('exceptions.not_found'));
     }
 
     #[Test]
-    public function a_not_found_http_exception_keeps_the_framework_handling(): void
+    public function a_not_found_http_exception_is_rendered_through_the_not_found_envelope(): void
     {
         Route::get('/core-test/exceptions/404', function () {
             throw new NotFoundHttpException;
         });
 
-        $this->getJson('/core-test/exceptions/404')->assertStatus(404);
+        $this->getJson('/core-test/exceptions/404')
+            ->assertStatus(404)
+            ->assertJsonPath('status', false)
+            ->assertJsonPath('custom_code', Handler::NOT_FOUND_CODE);
+    }
+
+    #[Test]
+    public function an_authorization_denial_is_rendered_through_the_forbidden_envelope(): void
+    {
+        Route::get('/core-test/exceptions/forbidden', function () {
+            throw new AuthorizationException;
+        });
+
+        $this->getJson('/core-test/exceptions/forbidden')
+            ->assertStatus(403)
+            ->assertJsonPath('status', false)
+            ->assertJsonPath('custom_code', Handler::FORBIDDEN_CODE)
+            ->assertJsonPath('message', __('exception.unauthorized'));
+    }
+
+    #[Test]
+    public function an_abort_403_is_rendered_through_the_forbidden_envelope(): void
+    {
+        Route::get('/core-test/exceptions/abort-403', fn () => abort(403));
+
+        $this->getJson('/core-test/exceptions/abort-403')
+            ->assertStatus(403)
+            ->assertJsonPath('custom_code', Handler::FORBIDDEN_CODE);
     }
 
     #[Test]

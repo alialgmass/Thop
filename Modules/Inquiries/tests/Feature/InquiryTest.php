@@ -4,6 +4,7 @@ namespace Modules\Inquiries\Tests\Feature;
 
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Carbon;
 use Modules\Businesses\Models\BusinessAccount;
 use Modules\Catalog\Models\Product;
 use Modules\Inquiries\Enums\LeadStatus;
@@ -163,6 +164,39 @@ class InquiryTest extends TestCase
             ->assertOk()
             ->assertJsonCount(1, 'body.inquiries.data')
             ->assertJsonPath('body.inquiries.data.0.id', $mine->id);
+    }
+
+    #[Test]
+    public function raising_an_rfq_advances_the_leads_last_activity(): void
+    {
+        $product = Product::factory()->for($this->sellerBusiness, 'businessAccount')->create();
+
+        $inquiry = Inquiry::factory()->create([
+            'seller_business_id' => $this->sellerBusiness->id,
+            'product_id' => $product->id,
+            'created_at' => now()->subDays(5),
+            'updated_at' => now()->subDays(5),
+        ]);
+
+        $before = $this->actingAs($this->sellerUser)
+            ->getJson('/api/v1/inquiries?role=seller')
+            ->json('body.inquiries.data.0.last_activity_at');
+
+        $this->travelTo(now()->addMinute());
+        $inquiry->rfqs()->create([
+            'product_id' => $product->id,
+            'quantity' => 100,
+            'needed_by_date' => now()->addWeek(),
+        ]);
+
+        $after = $this->actingAs($this->sellerUser)
+            ->getJson('/api/v1/inquiries?role=seller')
+            ->json('body.inquiries.data.0.last_activity_at');
+
+        $this->assertTrue(
+            Carbon::parse($after)->greaterThan(Carbon::parse($before)),
+            'the RFQ should have touched the inquiry so last_activity_at moved forward',
+        );
     }
 
     #[Test]
