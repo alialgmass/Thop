@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use Database\Factories\UserFactory;
+use Filament\Models\Contracts\HasName;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\Hidden;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -18,7 +19,7 @@ use Spatie\Permission\Traits\HasRoles;
 
 #[Fillable(['phone', 'email', 'password', 'account_type', 'language', 'status'])]
 #[Hidden(['password', 'two_factor_secret', 'two_factor_recovery_codes', 'remember_token'])]
-class User extends Authenticatable
+class User extends Authenticatable implements HasName
 {
     /** @use HasFactory<UserFactory> */
     use HasApiTokens, HasFactory, HasRoles, Notifiable, TwoFactorAuthenticatable;
@@ -70,5 +71,10 @@ class User extends Authenticatable
     public function businessAccount(): HasOne
     {
         return $this->hasOne(BusinessAccount::class);
+    }
+
+    public function getFilamentName(): string
+    {
+        return $this->phone;
     }
 }

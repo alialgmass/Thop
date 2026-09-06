@@ -3,7 +3,10 @@
 namespace App\Console\Commands;
 
 use Filament\Commands\MakeUserCommand as BaseMakeUserCommand;
+use Illuminate\Contracts\Auth\Authenticatable;
+use Illuminate\Database\Eloquent\Model;
 use Modules\Auth\Enums\UserStatus;
+use Spatie\Permission\Models\Role;
 use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Input\InputOption;
 
@@ -79,5 +82,14 @@ class MakeUserCommand extends BaseMakeUserCommand
             ),
             'status' => UserStatus::Active,
         ];
+    }
+
+    protected function createUser(): Model&Authenticatable
+    {
+        $user = parent::createUser();
+
+        $user->assignRole(Role::findOrCreate('admin', 'web'));
+
+        return $user;
     }
 }
