@@ -13,37 +13,21 @@ use Filament\Resources\Resource;
 use Filament\Schemas\Schema;
 use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Table;
-use UnitEnum;
+use Modules\Core\Filament\Concerns\HasLocalizedLabels;
 
 class UserResource extends Resource
 {
+    use HasLocalizedLabels;
+
     protected static ?string $model = User::class;
 
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedUsers;
 
-    protected static string|UnitEnum|null $navigationGroup = null;
-
     protected static ?int $navigationSort = 30;
 
-    public static function getNavigationGroup(): ?string
-    {
-        return __('panel.nav.access_control');
-    }
+    protected static string $labelTranslationKey = 'panel.user';
 
-    public static function getNavigationLabel(): string
-    {
-        return __('panel.user.plural');
-    }
-
-    public static function getModelLabel(): string
-    {
-        return __('panel.user.label');
-    }
-
-    public static function getPluralModelLabel(): string
-    {
-        return __('panel.user.plural');
-    }
+    protected static string $navigationGroupTranslationKey = 'panel.nav.access_control';
 
     public static function form(Schema $schema): Schema
     {

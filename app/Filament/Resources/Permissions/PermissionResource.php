@@ -12,38 +12,22 @@ use Filament\Resources\Resource;
 use Filament\Schemas\Schema;
 use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Table;
+use Modules\Core\Filament\Concerns\HasLocalizedLabels;
 use Spatie\Permission\Models\Permission;
-use UnitEnum;
 
 class PermissionResource extends Resource
 {
+    use HasLocalizedLabels;
+
     protected static ?string $model = Permission::class;
 
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedKey;
 
-    protected static string|UnitEnum|null $navigationGroup = null;
-
     protected static ?int $navigationSort = 34;
 
-    public static function getNavigationGroup(): ?string
-    {
-        return __('panel.nav.access_control');
-    }
+    protected static string $labelTranslationKey = 'panel.permission';
 
-    public static function getNavigationLabel(): string
-    {
-        return __('panel.permission.plural');
-    }
-
-    public static function getModelLabel(): string
-    {
-        return __('panel.permission.label');
-    }
-
-    public static function getPluralModelLabel(): string
-    {
-        return __('panel.permission.plural');
-    }
+    protected static string $navigationGroupTranslationKey = 'panel.nav.access_control';
 
     public static function form(Schema $schema): Schema
     {

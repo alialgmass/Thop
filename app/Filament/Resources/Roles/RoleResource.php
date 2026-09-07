@@ -12,38 +12,22 @@ use Filament\Resources\Resource;
 use Filament\Schemas\Schema;
 use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Table;
+use Modules\Core\Filament\Concerns\HasLocalizedLabels;
 use Spatie\Permission\Models\Role;
-use UnitEnum;
 
 class RoleResource extends Resource
 {
+    use HasLocalizedLabels;
+
     protected static ?string $model = Role::class;
 
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedShieldCheck;
 
-    protected static string|UnitEnum|null $navigationGroup = null;
-
     protected static ?int $navigationSort = 32;
 
-    public static function getNavigationGroup(): ?string
-    {
-        return __('panel.nav.access_control');
-    }
+    protected static string $labelTranslationKey = 'panel.role';
 
-    public static function getNavigationLabel(): string
-    {
-        return __('panel.role.plural');
-    }
-
-    public static function getModelLabel(): string
-    {
-        return __('panel.role.label');
-    }
-
-    public static function getPluralModelLabel(): string
-    {
-        return __('panel.role.plural');
-    }
+    protected static string $navigationGroupTranslationKey = 'panel.nav.access_control';
 
     public static function form(Schema $schema): Schema
     {

@@ -7,12 +7,12 @@ use Filament\Resources\Resource;
 use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
+use Modules\Core\Filament\Concerns\HasLocalizedLabels;
 use Modules\Verification\Enums\VerificationRequestStatus;
 use Modules\Verification\Filament\Resources\VerificationRequests\Pages\ListVerificationRequests;
 use Modules\Verification\Filament\Resources\VerificationRequests\Pages\ViewVerificationRequest;
 use Modules\Verification\Filament\Resources\VerificationRequests\Tables\VerificationRequestsTable;
 use Modules\Verification\Models\VerificationRequest;
-use UnitEnum;
 
 /**
  * Admin review queue for business verification (US-ADM-01). Read + decide only —
@@ -20,33 +20,17 @@ use UnitEnum;
  */
 class VerificationRequestResource extends Resource
 {
+    use HasLocalizedLabels;
+
     protected static ?string $model = VerificationRequest::class;
 
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedShieldCheck;
 
-    protected static string|UnitEnum|null $navigationGroup = null;
-
     protected static ?int $navigationSort = 10;
 
-    public static function getNavigationGroup(): ?string
-    {
-        return __('panel.nav.moderation');
-    }
+    protected static string $labelTranslationKey = 'verification::panel';
 
-    public static function getNavigationLabel(): string
-    {
-        return __('verification::panel.plural');
-    }
-
-    public static function getModelLabel(): string
-    {
-        return __('verification::panel.label');
-    }
-
-    public static function getPluralModelLabel(): string
-    {
-        return __('verification::panel.plural');
-    }
+    protected static string $navigationGroupTranslationKey = 'panel.nav.moderation';
 
     public static function table(Table $table): Table
     {

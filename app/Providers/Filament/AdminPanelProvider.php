@@ -33,9 +33,9 @@ class AdminPanelProvider extends PanelProvider
             ])
             ->brandName(fn (): string => __('panel.brand'))
             ->viteTheme('resources/css/filament/admin/theme.css')
-            // Discovery order fixes the navigation-group order (Moderation →
-            // Billing → Access Control → System) without a locale-sensitive
-            // navigationGroups() list.
+            // Resource discovery order sets the nav-group order (Moderation,
+            // Billing, Access Control, System) — locale-independent, unlike a
+            // navigationGroups() list of translated strings.
             ->discoverResources(in: base_path('Modules/Verification/Filament/Resources'), for: 'Modules\Verification\Filament\Resources')
             ->discoverResources(in: base_path('Modules/Subscriptions/Filament/Resources'), for: 'Modules\Subscriptions\Filament\Resources')
             ->discoverResources(in: app_path('Filament/Resources'), for: 'App\Filament\Resources')

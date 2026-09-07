@@ -9,7 +9,7 @@ use Filament\Tables\Table;
 use Modules\Admin\Filament\Resources\AuditLogs\Pages\ListAuditLogs;
 use Modules\Admin\Filament\Resources\AuditLogs\Tables\AuditLogsTable;
 use Modules\Admin\Models\AuditLog;
-use UnitEnum;
+use Modules\Core\Filament\Concerns\HasLocalizedLabels;
 
 /**
  * Read-only window onto the immutable audit trail (US-ADM-09, BR-ADM-01). No
@@ -17,33 +17,17 @@ use UnitEnum;
  */
 class AuditLogResource extends Resource
 {
+    use HasLocalizedLabels;
+
     protected static ?string $model = AuditLog::class;
 
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedClipboardDocumentList;
 
-    protected static string|UnitEnum|null $navigationGroup = null;
-
     protected static ?int $navigationSort = 90;
 
-    public static function getNavigationGroup(): ?string
-    {
-        return __('panel.nav.system');
-    }
+    protected static string $labelTranslationKey = 'admin::panel.audit_log';
 
-    public static function getNavigationLabel(): string
-    {
-        return __('admin::panel.audit_log.plural');
-    }
-
-    public static function getModelLabel(): string
-    {
-        return __('admin::panel.audit_log.label');
-    }
-
-    public static function getPluralModelLabel(): string
-    {
-        return __('admin::panel.audit_log.plural');
-    }
+    protected static string $navigationGroupTranslationKey = 'panel.nav.system';
 
     public static function table(Table $table): Table
     {
