@@ -3,13 +3,13 @@
 namespace Modules\Verification\Http\Controllers;
 
 use App\Http\Controllers\Controller;
-use App\Http\Middleware\RedirectIfNotAdmin;
+use Modules\Core\Http\Middleware\EnsureUserIsAdmin;
 use Modules\Verification\Models\VerificationDocument;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 
 /**
  * Streams a verification document to an admin inside the Filament panel. Access
- * is gated by the panel's session auth + {@see RedirectIfNotAdmin}
+ * is gated by the panel's session auth + {@see EnsureUserIsAdmin}
  * on the route group, matching the admin's REST authorization (VerificationPolicy::download).
  */
 class AdminDocumentDownloadController extends Controller

@@ -9,4 +9,13 @@ class AdminServiceProvider extends ModuleServiceProvider
     protected string $name = 'Admin';
 
     protected string $nameLower = 'admin';
+
+    /**
+     * Provider classes to register.
+     *
+     * @var string[]
+     */
+    protected array $providers = [
+        RouteServiceProvider::class,
+    ];
 }

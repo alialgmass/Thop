@@ -7,6 +7,7 @@ use Modules\Core\Http\Middleware\AcceptJsonMiddleware;
 use Modules\Core\Http\Middleware\AppLanguage;
 use Modules\Core\Http\Middleware\Authenticate;
 use Modules\Core\Http\Middleware\CustomThrottleRequests;
+use Modules\Core\Http\Middleware\EnsureUserIsAdmin;
 use Modules\Core\Http\Middleware\TimezoneConfig;
 use Nwidart\Modules\Support\ModuleServiceProvider;
 
@@ -48,5 +49,6 @@ class CoreServiceProvider extends ModuleServiceProvider
         $router->aliasMiddleware('api.timezone', TimezoneConfig::class);
         $router->aliasMiddleware('throttle.phone', CustomThrottleRequests::class);
         $router->aliasMiddleware('auth.admin', Authenticate::class);
+        $router->aliasMiddleware('admin', EnsureUserIsAdmin::class);
     }
 }

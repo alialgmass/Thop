@@ -35,8 +35,9 @@ Route::middleware(['auth:sanctum'])->prefix('v1')->group(function () {
         });
     });
 
-    // Admin review queue (US-SEL-11, BR-ADM-01) — authorization via ProductPolicy
-    Route::prefix('admin/products')->name('admin.products.')->group(function () {
+    // Admin review queue (US-SEL-11, BR-ADM-01). Gated by the shared `admin`
+    // role middleware; ProductPolicy checks remain as defense in depth.
+    Route::middleware('admin')->prefix('admin/products')->name('admin.products.')->group(function () {
         Route::get('/', [AdminProductReviewController::class, 'queue'])->name('index');
         Route::post('/{product}/approve', [AdminProductReviewController::class, 'approve'])->name('approve');
         Route::post('/{product}/reject', [AdminProductReviewController::class, 'reject'])->name('reject');

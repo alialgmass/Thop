@@ -14,7 +14,7 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::get('verification-status', [VerificationController::class, 'status'])->name('status');
     });
 
-    Route::prefix('v1/admin/verification-requests')->name('admin.verification-requests.')->group(function () {
+    Route::middleware('admin')->prefix('v1/admin/verification-requests')->name('admin.verification-requests.')->group(function () {
         Route::get('/', [AdminVerificationController::class, 'queue'])->name('index');
         Route::post('{verificationRequest}/approve', [AdminVerificationController::class, 'approve'])->name('approve');
         Route::post('{verificationRequest}/reject', [AdminVerificationController::class, 'reject'])->name('reject');
