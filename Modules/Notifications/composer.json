@@ -1,0 +1,23 @@
+{
+    "name": "thob/notifications",
+    "description": "Notifications module - event-to-notification layer, preferences, in-app feed (US-NOT-01..04)",
+    "authors": [],
+    "extra": {
+        "laravel": {
+            "providers": [],
+            "aliases": {}
+        }
+    },
+    "autoload": {
+        "psr-4": {
+            "Modules\\Notifications\\": "/",
+            "Modules\\Notifications\\Database\\Factories\\": "database/factories/",
+            "Modules\\Notifications\\Database\\Seeders\\": "database/seeders/"
+        }
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "Modules\\Notifications\\Tests\\": "tests/"
+        }
+    }
+}

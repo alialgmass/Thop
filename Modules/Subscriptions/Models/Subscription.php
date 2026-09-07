@@ -11,6 +11,7 @@ use Illuminate\Support\Carbon;
 use Modules\Businesses\Models\BusinessAccount;
 use Modules\Subscriptions\Database\Factories\SubscriptionFactory;
 use Modules\Subscriptions\Enums\SubscriptionStatus;
+use Modules\Subscriptions\Events\SubscriptionExpired;
 
 /**
  * @property int $id
@@ -141,8 +142,14 @@ class Subscription extends Model
      */
     public function markExpired(): void
     {
+        if ($this->status === SubscriptionStatus::Restricted) {
+            return;
+        }
+
         $this->update([
             'status' => SubscriptionStatus::Restricted,
         ]);
+
+        SubscriptionExpired::dispatch($this);
     }
 }

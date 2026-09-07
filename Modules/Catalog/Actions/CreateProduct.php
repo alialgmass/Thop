@@ -4,6 +4,7 @@ namespace Modules\Catalog\Actions;
 
 use Modules\Businesses\Models\BusinessAccount;
 use Modules\Catalog\Enums\ProductStatus;
+use Modules\Catalog\Events\ProductSubmitted;
 use Modules\Catalog\Exceptions\ProductLimitExceededException;
 use Modules\Catalog\Models\Product;
 use Modules\Catalog\Support\CatalogGating;
@@ -62,6 +63,10 @@ class CreateProduct
         }
 
         $this->entitlements->incrementUsage($business, 'product_count');
+
+        if ($product->status === ProductStatus::PendingReview) {
+            ProductSubmitted::dispatch($product);
+        }
 
         return $product;
     }

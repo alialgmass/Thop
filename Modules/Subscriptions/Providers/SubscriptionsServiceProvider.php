@@ -4,6 +4,7 @@ namespace Modules\Subscriptions\Providers;
 
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Schedule;
+use Modules\Subscriptions\Console\NotifyExpiringSubscriptions;
 use Modules\Subscriptions\Console\ProcessSubscriptionPeriodEnds;
 use Modules\Subscriptions\Models\Subscription;
 use Modules\Subscriptions\Policies\SubscriptionPolicy;
@@ -30,11 +31,15 @@ class SubscriptionsServiceProvider extends ModuleServiceProvider
 
         $this->commands([
             ProcessSubscriptionPeriodEnds::class,
+            NotifyExpiringSubscriptions::class,
         ]);
 
         // Enforce deferred downgrades/cancellations and expiry at period end
         // (BR-SUB-02, BR-SUB-03). Preregistered via the queue worker process.
         Schedule::command(ProcessSubscriptionPeriodEnds::class)->daily();
+
+        // Remind sellers before their subscription lapses (US-SUB-08 / US-NOT-01).
+        Schedule::command(NotifyExpiringSubscriptions::class)->daily();
 
         Gate::policy(Subscription::class, SubscriptionPolicy::class);
     }

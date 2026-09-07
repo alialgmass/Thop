@@ -3,6 +3,7 @@
 namespace Modules\Catalog\Actions;
 
 use Modules\Catalog\Enums\ProductStatus;
+use Modules\Catalog\Events\ProductSubmitted;
 use Modules\Catalog\Models\Product;
 use Modules\Catalog\Support\CatalogGating;
 use Modules\Core\Exceptions\ApiException\ExceptionResponse;
@@ -35,6 +36,10 @@ class PublishProduct
                 : ProductStatus::Published,
             'rejection_reason' => null,
         ])->save();
+
+        if ($product->status === ProductStatus::PendingReview) {
+            ProductSubmitted::dispatch($product);
+        }
 
         return $product;
     }
