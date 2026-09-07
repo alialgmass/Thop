@@ -1,6 +1,6 @@
 # THOB — Phase & Endpoint Status
 
-Last updated: **2026-09-06**. Companion to `docs/PROGRESS.md` (narrative) — this file is the
+Last updated: **2026-09-07**. Companion to `docs/PROGRESS.md` (narrative) — this file is the
 at-a-glance grid. Verification columns are deliberately conservative: **passing automated
 tests ≠ VERIFIED**.
 
@@ -37,15 +37,25 @@ product decision #26.
 | 4 | Search | ✅ | ✅ 37 | — | ✅ | ✅ | DOCUMENTED |
 | 5 | Favorites + Comparison | ✅ | ✅ 15 (Favorites 9 + Comparison 6) | — | ✅ | ✅ | DOCUMENTED |
 | 6 | Inquiries / RFQ / Quotation / Reporting | ✅ | ✅ 36 | — | ✅ | ✅ | DOCUMENTED |
-| 7 | Chat (Pusher) | ⬜ | ⬜ | — | ⬜ | ⬜ | PENDING |
-| 8 | Notifications | ⬜ (events fire, no listeners) | ⬜ | — | ⬜ | ⬜ | PENDING |
+| 7 | Chat (Pusher) | ✅ (#27) | ✅ 21 | — | ⬜ | 🟡 (API_REFERENCE §Chat) | **PARTIAL** — postman + QA plan pending |
+| 8 | Notifications | ✅ (#28) | ✅ 21 | — | ⬜ | 🟡 (API_REFERENCE §Notifications) | **PARTIAL** — postman + QA traceability (US-NOT-24) pending |
 | 9 | Admin dashboard (rest of) | 🟡 verification + subscriptions panels only | 🟡 12 Filament tests | — | n/a (Filament) | ⬜ | PENDING |
 | 10 | R1 hardening (authz suite / load / security) | ⬜ | ⬜ | — | ⬜ | ⬜ | PENDING |
 
-**Full suite: 338 automated tests, 338 passing, 0 failing, 0 skipped**
+**Full suite: 378 automated tests, 378 passing, 0 failing, 0 skipped**
 (`php artisan test`, SQLite `:memory:`, 2026-09-07). Timeline: 294 baseline → 296 (D6/D7)
 → 315 (gap-closure) → 326 (#15 Phase 3.2 media) → 328 (#21 SEC-NFR-05 malware scan seam)
-→ **338** (#16 Phase 3.3 CSV bulk import + review fixes).
+→ 338 (#16 Phase 3.3 CSV bulk import) → 357 (#27 Phase 7 Chat) → 376 (#28 Phase 8 Notifications) → **378** (Phase 7/8 code-review fixes).
+
+### Phase 7 / 8 deferrals (documented, not gaps in the phase scope)
+
+- **`market_alert_match` (§14 / US-BUY-03)** — no `MarketAlertMatched` event or notification. Depends on the buyer "market alerts" feature (BUY-FR-03), which is unbuilt. Whole matrix row deferred.
+- **Real push / SMS providers (SI-FR-04)** — `PushSender` / `SmsSender` are seams with a `log` default driver (`null` alt). No FCM/APNs/OneSignal or SMS gateway; that is a follow-up ticket.
+- **Marketing campaign sending** — only the opt-in flag (preference rows) + the resolver's marketing branch ship. No marketing `Notification` classes, no separate suppression-list table (structure deferred until a campaign feature exists).
+- **Notification digests** (§17 cron mention) — R1 sends per event.
+- **Order / payment / shipment matrix rows** — R2 / R4.
+- **Sub-user notification routing (ACC-FR-08)** — R2; owner-only recipients in R1.
+- **US-NOT-24 traceability doc** — `docs/qa/phase-7-*.md` / `phase-8-*.md` + postman folders not yet written (follow-up, same as Phases 3.2/3.3 which also lag their postman/QA docs).
 
 ---
 
@@ -101,6 +111,20 @@ product decision #26.
 | `POST /inquiries/{id}/reports` | ✅ | ✅ | — | ✅ | ✅ | DOCUMENTED |
 | **Taxonomy (dependency)** | | | | | | |
 | `GET /taxonomy/{5 lists}` | ✅ | ✅ | — | ✅ | ✅ | DOCUMENTED |
+| **Phase 7 — Chat** | | | | | | |
+| `POST /inquiries/{id}/conversation` | ✅ | ✅ | — | ⬜ | ✅ | TESTED |
+| `GET /conversations` | ✅ | ✅ | — | ⬜ | ✅ | TESTED |
+| `GET /conversations/{id}` | ✅ | ✅ | — | ⬜ | ✅ | TESTED |
+| `POST /conversations/{id}/read` | ✅ | ✅ | — | ⬜ | ✅ | TESTED |
+| `GET\|POST /conversations/{id}/messages` | ✅ | ✅ | — | ⬜ | ✅ | TESTED |
+| `POST /conversations/{id}/messages/{id}/reports` | ✅ | ✅ | — | ⬜ | ✅ | TESTED |
+| `POST /broadcasting/auth` (channel policy) | ✅ | ✅ | — | ⬜ | ✅ | TESTED |
+| **Phase 8 — Notifications** | | | | | | |
+| `GET /notifications` (+ `?unread=1`) | ✅ | ✅ | — | ⬜ | ✅ | TESTED |
+| `GET /notifications/unread-count` | ✅ | ✅ | — | ⬜ | ✅ | TESTED |
+| `POST /notifications/{id}/read` · `/read-all` | ✅ | ✅ | — | ⬜ | ✅ | TESTED |
+| `GET\|PUT /notification-preferences` | ✅ | ✅ | — | ⬜ | ✅ | TESTED |
+| `PUT /notification-preferences/marketing` | ✅ | ✅ | — | ⬜ | ✅ | TESTED |
 
 ---
 

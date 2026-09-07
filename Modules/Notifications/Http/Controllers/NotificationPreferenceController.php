@@ -34,7 +34,7 @@ class NotificationPreferenceController extends Controller
 
         foreach (NotificationCategory::cases() as $category) {
             foreach (NotificationChannel::cases() as $channel) {
-                $locked = ($channel->isOperationalOverride() && $this->categoryIsOperational($category))
+                $locked = ($channel->isOperationalOverride() && $category->isOperational())
                     || $channel === NotificationChannel::Database;
 
                 $grid[] = [
@@ -102,11 +102,6 @@ class NotificationPreferenceController extends Controller
             ->apiMessage(__('notifications::messages.marketing_updated'))
             ->apiBody(['marketing_opt_in' => $enabled])
             ->apiResponse();
-    }
-
-    private function categoryIsOperational(NotificationCategory $category): bool
-    {
-        return in_array($category, [NotificationCategory::Verification, NotificationCategory::Subscription], true);
     }
 
     private function marketingOptIn(User $user): bool

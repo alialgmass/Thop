@@ -496,5 +496,52 @@ image upload) holds by construction: the product always exists before any media 
 Still pending on #16: an **XLSX** reader (CSV works today; XLSX needs a spreadsheet library
 sign-off).
 
-Out of scope (later phases): Chat (7), Notifications (8), rest of Admin (9),
-Orders/Payments/Shipping (R2–R4).
+---
+
+## Chat (Phase 7, #27) — `auth:sanctum`
+
+MySQL is the source of truth; Pusher is best-effort realtime. A broadcast failure never
+fails or delays a send (US-CHT-05).
+
+| Method | Path | Who | Notes |
+|---|---|---|---|
+| POST | `/inquiries/{inquiry}/conversation` | inquiry participant (else 403) | Idempotent open/create — a second call returns the existing conversation (`200` vs `201`). `body.conversation: { id, inquiry_id, buyer_id, seller_business_id, unread_count?, last_message?, … }`. |
+| GET | `/conversations` | authenticated | The caller's conversations, paginated, ordered by last activity. Each row carries the caller's own `unread_count`; response also carries top-level `body.total_unread`. |
+| GET | `/conversations/{conversation}` | participant (else 403) | Detail + caller's `unread_count`. |
+| POST | `/conversations/{conversation}/read` | participant (else 403) | Marks the other party's messages read. → `body: { unread_count: 0, total_unread }`. |
+| GET | `/conversations/{conversation}/messages` | participant (else 403) | Cursor-paginated history, newest-first by default; `?direction=newer` for ascending. `body.messages: { data: [ { id, conversation_id, sender_id, body, read_at, created_at } ], meta, links }`. |
+| POST | `/conversations/{conversation}/messages` | participant (else 403) | Body `body` (required, `≤ chat.message_max_length`). Persists then fires `MessageSent` (queued broadcast on `private-conversation.{id}`). Rate-limited: `chat.throttle.send_per_minute` → **429**. → **201** `body.message`. |
+| POST | `/conversations/{conversation}/messages/{message}/reports` | participant (else 403) | Body `reason` (required, ≤1000). Writes a `reports` row (`reportable_type = message`). Message from another conversation → **404**. → **201** `body.report`. |
+
+Broadcast auth: `POST /broadcasting/auth` (`auth:sanctum`) runs the same `ConversationPolicy`
+as the REST endpoints — a non-participant is **403** on the channel, never trusting the
+client-declared channel name (US-CHT-02).
+
+---
+
+## Notifications (Phase 8, #28) — `auth:sanctum`
+
+One `Event::subscribe` listener layer turns existing domain events into queued Laravel
+notifications. Channels are resolved server-side (`NotificationChannelResolver`): matrix
+defaults ∩ preferences, `database` always kept, operational events (`verification_*`,
+`subscription_*`) force `mail`+`sms` regardless of preference (US-NOT-03).
+
+| Method | Path | Notes |
+|---|---|---|
+| GET | `/notifications` | The caller's feed, paginated, newest-first. `?unread=1` filters to unread. `body.notifications.data: [ { id, type, data, read_at, created_at } ]`. |
+| GET | `/notifications/unread-count` | → `body.unread_count`. |
+| POST | `/notifications/{notification}/read` | Marks one read; not the caller's → **404**. |
+| POST | `/notifications/read-all` | → `body.unread_count: 0`. |
+| GET | `/notification-preferences` | Effective grid: every `(category, channel)` with resolved `enabled` + `operational_locked`, plus `body.marketing_opt_in`. |
+| PUT | `/notification-preferences` | Body `preferences: [{ category, channel, enabled }]` — batch upsert. Disabling a locked (operational) channel is stored but has no effect; the response echoes the effective state. |
+| PUT | `/notification-preferences/marketing` | Body `enabled` (bool) — the separate marketing opt-in (US-NOT-04). |
+
+Categories: `verification`, `product_review`, `inquiry`, `rfq`, `quotation`, `message`,
+`subscription`, `marketing`. Channels: `database`, `push`, `mail`, `sms`. Push/SMS are
+`log`-driver seams in R1 (no vendor in the SRS).
+
+New scheduled command: `subscriptions:notify-expiring` (daily) fires `SubscriptionExpiring`
+once per period for subscriptions ending within `SUBSCRIPTION_EXPIRING_REMINDER_DAYS`.
+
+Out of scope (later phases): rest of Admin (9), Orders/Payments/Shipping (R2–R4);
+`market_alert_match` and real push/SMS providers deferred (see `docs/PHASE_STATUS.md`).

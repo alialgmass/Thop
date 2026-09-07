@@ -119,6 +119,19 @@ class Conversation extends Model
     }
 
     /**
+     * Order by last activity — most recent message, or the conversation's own
+     * creation time when it has no messages yet (US-CHT-21).
+     *
+     * @param  Builder<static>  $query
+     */
+    public function scopeOrderByLastActivity(Builder $query): void
+    {
+        $query
+            ->withMax('messages as last_message_at', 'created_at')
+            ->orderByRaw('COALESCE(last_message_at, conversations.created_at) DESC');
+    }
+
+    /**
      * The participant who is not the given user — the recipient of a message
      * the user sends (used by Phase 8 notifications).
      */

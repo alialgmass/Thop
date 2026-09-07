@@ -3,17 +3,18 @@
 namespace Modules\Inquiries\Enums;
 
 use Illuminate\Database\Eloquent\Model;
+use Modules\Chat\Models\Message;
 use Modules\Inquiries\Models\Inquiry;
 
 /**
- * What can be reported (US-INQ-09). Only `Inquiry` exists in R1 — `Message`
- * joins once Phase 7's Chat module lands. Each case's value is both the
- * `reportable_type` morph alias and, eventually, an API-facing token, the
- * same shape as Favorites' `FavoritableType`.
+ * What can be reported (US-INQ-09 / US-CHT-09): an `Inquiry` thread or a chat
+ * `Message`. Each case's value is both the `reportable_type` morph alias and
+ * an API-facing token, the same shape as Favorites' `FavoritableType`.
  */
 enum ReportableType: string
 {
     case Inquiry = 'inquiry';
+    case Message = 'message';
 
     /**
      * @return class-string<Model>
@@ -22,6 +23,7 @@ enum ReportableType: string
     {
         return match ($this) {
             self::Inquiry => Inquiry::class,
+            self::Message => Message::class,
         };
     }
 

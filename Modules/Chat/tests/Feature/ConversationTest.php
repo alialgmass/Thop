@@ -79,7 +79,7 @@ class ConversationTest extends TestCase
             ->getJson('/api/v1/conversations')
             ->assertOk()
             ->assertJsonPath('body.total_unread', 3)
-            ->assertJsonPath('body.conversations.0.unread_count', 3);
+            ->assertJsonPath('body.conversations.data.0.unread_count', 3);
     }
 
     #[Test]

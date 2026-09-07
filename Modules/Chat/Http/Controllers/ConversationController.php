@@ -62,19 +62,20 @@ class ConversationController extends Controller
         /** @var User $user */
         $user = $request->user();
 
-        $conversations = Conversation::query()
+        $page = Conversation::query()
             ->forParticipant($user)
             ->withUnreadCountFor($user)
             ->with('latestMessage')
-            ->get()
-            ->sortByDesc(fn (Conversation $c) => $c->latestMessage?->created_at ?? $c->created_at)
-            ->values();
+            ->orderByLastActivity()
+            ->paginate();
+
+        $payload = ConversationResource::collection($page)->toResponse($request)->getData(true);
 
         return $this
             ->apiMessage(__('chat::messages.conversations_listed'))
             ->apiBody([
-                'conversations' => ConversationResource::collection($conversations),
-                'total_unread' => (int) $conversations->sum('unread_count'),
+                'conversations' => $payload,
+                'total_unread' => $this->totalUnreadFor($user),
             ])
             ->apiResponse();
     }
@@ -104,18 +105,25 @@ class ConversationController extends Controller
         $user = $request->user();
         $conversation->markReadFor($user);
 
-        $totalUnread = Conversation::query()
-            ->forParticipant($user)
-            ->withUnreadCountFor($user)
-            ->get()
-            ->sum('unread_count');
-
         return $this
             ->apiMessage(__('chat::messages.marked_read'))
             ->apiBody([
                 'unread_count' => 0,
-                'total_unread' => (int) $totalUnread,
+                'total_unread' => $this->totalUnreadFor($user),
             ])
             ->apiResponse();
+    }
+
+    /**
+     * The caller's unread message count across every conversation they're in
+     * (US-CHT-21).
+     */
+    private function totalUnreadFor(User $user): int
+    {
+        return (int) Conversation::query()
+            ->forParticipant($user)
+            ->withUnreadCountFor($user)
+            ->get()
+            ->sum('unread_count');
     }
 }

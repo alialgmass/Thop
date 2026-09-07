@@ -32,7 +32,7 @@ class NotifyExpiringSubscriptions extends Command
             ->whereBetween('current_period_end', [now(), now()->addDays($windowDays)])
             ->each(function (Subscription $subscription) use (&$count): void {
                 $notes = json_decode($subscription->notes ?? '', true) ?: [];
-                $marker = optional($subscription->current_period_end)->toDateString();
+                $marker = $subscription->current_period_end?->toDateString();
 
                 if (($notes['expiring_notified_for'] ?? null) === $marker) {
                     return;

@@ -4,7 +4,8 @@ namespace Modules\Notifications\Listeners;
 
 use App\Models\User;
 use Illuminate\Events\Dispatcher as EventDispatcher;
-use Illuminate\Support\Facades\Notification;
+use Illuminate\Notifications\Notification;
+use Illuminate\Support\Facades\Notification as NotificationDispatcher;
 use Modules\Catalog\Events\ProductApproved;
 use Modules\Catalog\Events\ProductRejected;
 use Modules\Catalog\Events\ProductSubmitted;
@@ -91,7 +92,7 @@ class NotificationEventSubscriber
 
     public function onVerificationSubmitted(VerificationSubmitted $event): void
     {
-        Notification::send(
+        NotificationDispatcher::send(
             AdminRecipients::all(),
             new VerificationSubmittedNotification($event->verificationRequest),
         );
@@ -115,7 +116,7 @@ class NotificationEventSubscriber
 
     public function onProductSubmitted(ProductSubmitted $event): void
     {
-        Notification::send(
+        NotificationDispatcher::send(
             AdminRecipients::all(),
             new ProductSubmittedNotification($event->product),
         );
@@ -153,7 +154,7 @@ class NotificationEventSubscriber
         );
     }
 
-    private function sendTo(?User $user, object $notification): void
+    private function sendTo(?User $user, Notification $notification): void
     {
         if ($user instanceof User) {
             $user->notify($notification);

@@ -138,6 +138,24 @@ class MessageTest extends TestCase
     }
 
     #[Test]
+    public function a_throwing_broadcast_dispatch_still_persists_the_message_and_returns_201(): void
+    {
+        // Simulate the realtime leg blowing up (a listener, or the broadcaster).
+        Event::listen(MessageSent::class, function (): void {
+            throw new \RuntimeException('pusher is down');
+        });
+
+        $this->actingAs($this->buyer)
+            ->postJson("/api/v1/conversations/{$this->conversation->id}/messages", ['body' => 'delivered anyway'])
+            ->assertCreated();
+
+        $this->assertDatabaseHas('messages', [
+            'conversation_id' => $this->conversation->id,
+            'body' => 'delivered anyway',
+        ]);
+    }
+
+    #[Test]
     public function message_history_is_paginated_not_returned_whole(): void
     {
         Message::factory()->count(70)->for($this->conversation)->create(['sender_id' => $this->sellerUser->id]);

@@ -36,7 +36,11 @@ abstract class BaseNotification extends Notification implements ShouldQueue
 
     /**
      * Account/financial ("must not be missed") — forces mail/sms on
-     * regardless of preference (US-NOT-03). Default: not operational.
+     * regardless of preference (US-NOT-03). Declared per notification: it is
+     * finer-grained than the category (e.g. a verification *decision* to the
+     * owner is operational, a verification *submitted* to the admin queue is
+     * not). {@see NotificationCategory::isOperational()} is the coarse,
+     * display-only counterpart used by the preferences grid.
      */
     public function operational(): bool
     {

@@ -21,6 +21,7 @@ use Modules\Inquiries\Models\Rfq;
 use Modules\Notifications\Enums\NotificationCategory;
 use Modules\Notifications\Enums\NotificationChannel;
 use Modules\Notifications\Models\NotificationPreference;
+use Modules\Notifications\Notifications\BaseNotification;
 use Modules\Notifications\Notifications\NewInquiryNotification;
 use Modules\Notifications\Notifications\NewMessageNotification;
 use Modules\Notifications\Notifications\NewRfqNotification;
@@ -29,6 +30,7 @@ use Modules\Notifications\Notifications\QuotationReceivedNotification;
 use Modules\Notifications\Notifications\SubscriptionExpiredNotification;
 use Modules\Notifications\Notifications\VerificationDecidedNotification;
 use Modules\Notifications\Notifications\VerificationSubmittedNotification;
+use Modules\Notifications\Support\NotificationChannelResolver;
 use Modules\Subscriptions\Events\SubscriptionExpired;
 use Modules\Subscriptions\Models\Subscription;
 use Modules\Subscriptions\Models\SubscriptionEntitlement;
@@ -197,6 +199,36 @@ class NotificationRoutingTest extends TestCase
                 && in_array('mail', $channels, true)
                 && in_array(NotificationChannel::Sms->driver(), $channels, true),
         );
+    }
+
+    #[Test]
+    public function the_resolver_forces_mail_and_sms_for_an_operational_notification_that_omits_them(): void
+    {
+        $notification = new class extends BaseNotification
+        {
+            public function category(): NotificationCategory
+            {
+                return NotificationCategory::Subscription;
+            }
+
+            public function operational(): bool
+            {
+                return true;
+            }
+
+            /** @return array<int, NotificationChannel> */
+            public function matrixChannels(): array
+            {
+                return [NotificationChannel::Database];
+            }
+        };
+
+        $channels = app(NotificationChannelResolver::class)
+            ->resolve($notification, $this->sellerUser);
+
+        $this->assertContains('mail', $channels);
+        $this->assertContains(NotificationChannel::Sms->driver(), $channels);
+        $this->assertContains('database', $channels);
     }
 
     #[Test]

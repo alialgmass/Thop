@@ -47,7 +47,7 @@ class SubscriptionExpiringNotification extends BaseNotification
         return [
             'type' => 'subscription_expiring',
             'subscription_id' => $this->subscription->getKey(),
-            'current_period_end' => optional($this->subscription->current_period_end)->toIso8601String(),
+            'current_period_end' => $this->subscription->current_period_end?->toIso8601String(),
         ];
     }
 

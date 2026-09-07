@@ -27,4 +27,14 @@ enum NotificationCategory: string
     {
         return $this !== self::Marketing;
     }
+
+    /**
+     * Account/financial categories — their mail/sms delivery is forced on
+     * regardless of preference (US-NOT-03). One list, shared by the resolver
+     * and the preferences endpoint.
+     */
+    public function isOperational(): bool
+    {
+        return in_array($this, [self::Verification, self::Subscription], true);
+    }
 }

@@ -3,6 +3,7 @@
 namespace Modules\Notifications\Support;
 
 use App\Models\User;
+use Illuminate\Contracts\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
 
 /**
@@ -22,7 +23,7 @@ class AdminRecipients
     public static function all(): Collection
     {
         return User::query()
-            ->whereHas('roles', fn ($query) => $query->where('name', 'admin'))
+            ->whereHas('roles', fn (Builder $query) => $query->where('name', 'admin'))
             ->get();
     }
 }
