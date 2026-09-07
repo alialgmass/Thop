@@ -1045,7 +1045,7 @@
       ]
     },
     {
-      "name": "Phase 3 — Catalog (seller products + media)",
+      "name": "Phase 3 — Catalog (seller products + media + CSV import)",
       "description": "US-SEL-01..08, US-SEL-11, BR-SEL-01/03/04. auth:sanctum, importer/retailer. Bulk import (3.3) is not built (#16). Run in order: Create product -> Upload product image -> Publish product.",
       "item": [
         {
@@ -1141,6 +1141,99 @@
               "raw": "{\n  \"description\": \"Soft cotton, 150cm, GSM 200\"\n}"
             },
             "description": "US-SEL-05 - owner only. Partial; re-syncs colors/price_tiers when present."
+          }
+        },
+        {
+          "name": "Download import template",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "text/csv"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/products/import/template",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "products",
+                "import",
+                "template"
+              ]
+            },
+            "description": "US-SEL-09 - seller. CSV template: header row + one worked example, UTF-8 BOM. Compound columns: color_ids \"3;7\", price_tiers \"50:41.00;200:38.50\", price_on_contact \"1\"/\"0\"."
+          }
+        },
+        {
+          "name": "Bulk import products (CSV)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const v = (pm.response.json().body || {}).import && pm.response.json().body.import.id; if (v) pm.environment.set(\"import_batch_id\", v);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/products/import",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "products",
+                "import"
+              ]
+            },
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "file",
+                  "type": "file",
+                  "src": [],
+                  "description": "CSV only (mimes:csv,txt), <= 2 MB. Use the downloaded template."
+                }
+              ]
+            },
+            "description": "US-SEL-09/US-SEL-10, BR-SEL-01/02/03 - importer/retailer (not wholesaler/customer). Stashes the file, dispatches a queued job, returns 202 body.import.id ({{import_batch_id}} saved). Each valid row -> a pending_review product; a bad row is failed and skipped; rows past product_limit are limit_rejected."
+          }
+        },
+        {
+          "name": "Import result report",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/products/import/{{import_batch_id}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "products",
+                "import",
+                "{{import_batch_id}}"
+              ]
+            },
+            "description": "US-SEL-09 - batch owner only (else 403). Batch status + per-row report: body.import.rows[] = { row_number, status: imported|failed|limit_rejected, product_id, errors }."
           }
         },
         {

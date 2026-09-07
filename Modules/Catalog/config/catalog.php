@@ -34,4 +34,17 @@ return [
         'accepted_mimes' => ['jpg', 'jpeg', 'png', 'webp'],
         'accepted_mimetypes' => ['image/jpeg', 'image/png', 'image/webp'],
     ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | Bulk import (Phase 3.3, US-SEL-09/US-SEL-10)
+    |--------------------------------------------------------------------------
+    |
+    | Uploaded CSVs are stashed on a private disk for the queued job to read.
+    | XLSX support is deferred until a reader library is approved on the issue.
+    |
+    */
+    'import' => [
+        'disk' => env('PRODUCT_IMPORT_DISK', 'local'),
+    ],
 ];

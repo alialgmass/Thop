@@ -18,5 +18,5 @@ return [
     'restricted_subscription' => 'Your subscription has lapsed. Renew to start adding products.',
     'not_in_review' => 'This product is not awaiting review.',
     'not_owner' => 'You do not own this product.',
-    'bulk_import_started' => 'Bulk import started.',
+    'bulk_import_started' => 'Bulk import started. Poll the import for the per-row result.',
 ];

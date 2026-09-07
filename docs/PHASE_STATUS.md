@@ -21,7 +21,8 @@ Verification scale: **PENDING** (not built) · **BUILT** (code only) · **TESTED
 
 Nothing is **VERIFIED** yet — manual QA (`docs/qa/`, issue #25) has not been executed. The
 D1–D13 spec/implementation discrepancies are now all resolved or fixed (see bottom); the
-remaining open gaps are Phase-3 build work (#15/#16), infra (#24), and product decision #26.
+remaining open gaps are the deferred XLSX import reader (#16 — CSV done), infra (#24), and
+product decision #26.
 
 ---
 
@@ -32,7 +33,7 @@ remaining open gaps are Phase-3 build work (#15/#16), infra (#24), and product d
 | 0 | Auth foundation | ✅ | ✅ 46 | — | ✅ | ✅ | DOCUMENTED |
 | 1 | Business profile / Verification / Audit | ✅ | ✅ 52 (Businesses 16 + Verification 31 + Admin 5) | — | ✅ | ✅ | DOCUMENTED |
 | 2 | Subscriptions & entitlements | ✅ | ✅ 64 | — | ✅ | ✅ | DOCUMENTED |
-| 3 | **Catalog** — 3.1 Products ✅ · 3.2 Media ✅ (#15) · 3.3 Bulk import ⬜ (#16) | 🟡 products + media done; bulk import missing | ✅ 21 Catalog tests | — | ✅ media + product endpoints | ✅ (§4) | **PARTIAL** |
+| 3 | **Catalog** — 3.1 Products ✅ · 3.2 Media ✅ (#15) · 3.3 CSV bulk import ✅ (#16) · XLSX import ⬜ (#16, needs lib sign-off) | 🟡 CSV path done; XLSX reader deferred | ✅ 31 Catalog tests | — | ✅ product + media + import endpoints | ✅ (§4) | **PARTIAL** |
 | 4 | Search | ✅ | ✅ 37 | — | ✅ | ✅ | DOCUMENTED |
 | 5 | Favorites + Comparison | ✅ | ✅ 15 (Favorites 9 + Comparison 6) | — | ✅ | ✅ | DOCUMENTED |
 | 6 | Inquiries / RFQ / Quotation / Reporting | ✅ | ✅ 36 | — | ✅ | ✅ | DOCUMENTED |
@@ -41,9 +42,10 @@ remaining open gaps are Phase-3 build work (#15/#16), infra (#24), and product d
 | 9 | Admin dashboard (rest of) | 🟡 verification + subscriptions panels only | 🟡 12 Filament tests | — | n/a (Filament) | ⬜ | PENDING |
 | 10 | R1 hardening (authz suite / load / security) | ⬜ | ⬜ | — | ⬜ | ⬜ | PENDING |
 
-**Full suite: 328 automated tests, 328 passing, 0 failing, 0 skipped, 966 assertions**
-(`php artisan test`, SQLite `:memory:`, 2026-09-06). Timeline: 294 baseline → 296 (D6/D7)
-→ 315 (gap-closure) → 326 (#15 Phase 3.2 media) → **328** (#21 SEC-NFR-05 malware scan seam).
+**Full suite: 338 automated tests, 338 passing, 0 failing, 0 skipped**
+(`php artisan test`, SQLite `:memory:`, 2026-09-07). Timeline: 294 baseline → 296 (D6/D7)
+→ 315 (gap-closure) → 326 (#15 Phase 3.2 media) → 328 (#21 SEC-NFR-05 malware scan seam)
+→ **338** (#16 Phase 3.3 CSV bulk import + review fixes).
 
 ---
 
@@ -104,10 +106,11 @@ remaining open gaps are Phase-3 build work (#15/#16), infra (#24), and product d
 
 ## Current development frontier
 
-1. **Phase 3 bulk import** (#16) — the last remaining R1 feature build. 3.1 (product CRUD,
-   lifecycle, review queue, plan limit) and 3.2 (media upload/reorder/delete + publish
-   requires ≥1 image) are done and tested; XLSX/CSV import is not (needs a spreadsheet-lib
-   decision).
+1. **Phase 3 bulk import** (#16) — 3.1 (product CRUD, lifecycle, review queue, plan limit),
+   3.2 (media upload/reorder/delete + publish requires ≥1 image) and 3.3 **CSV** bulk import
+   (template download, queued per-row job, per-row report, batch-wide `product_limit`) are
+   done and tested. Only the **XLSX** reader remains — deferred pending a spreadsheet-library
+   sign-off (native `fgetcsv` covers CSV with no new dependency).
 2. **Manual QA pass** on Phases 0–2, 4–6 (#25) — checklists in `docs/qa/`, none executed;
    blocked on #15 + the gap-closure batch landing.
 3. **Follow-ups**: MySQL FULLTEXT CI lane + 100k load check (#24, D12); a real ClamAV/hosted

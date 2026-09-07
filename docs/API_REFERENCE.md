@@ -4,8 +4,9 @@ Hand-maintained. Seeded from `php artisan route:list` + the FormRequest / Resour
 source on **2026-09-06**. Covers **completed phases only: 0, 1, 2, 4, 5, 6** plus the
 always-public Taxonomy read endpoints (Phase 1 dependency).
 
-Phase 3 (Catalog) is **partially done**: 3.1 products + 3.2 media are implemented and
-tested (documented in §4); 3.3 bulk import is not built.
+Phase 3 (Catalog) is **partially done**: 3.1 products + 3.2 media + 3.3 CSV bulk import are
+implemented and tested (documented in §4). XLSX import is still deferred (needs a reader
+library sign-off, issue #16).
 
 ---
 
@@ -464,8 +465,9 @@ No input, no pagination. Active rows only, ordered by `name_en`.
 
 ## 4. Phase 3 — Catalog (seller product management)
 
-**3.1 Products + 3.2 Media are implemented and tested** (`Modules/Catalog`). **3.3 Bulk
-import (XLSX/CSV) is not built** (issue #16). All routes below are `auth:sanctum`.
+**3.1 Products + 3.2 Media + 3.3 CSV bulk import are implemented and tested**
+(`Modules/Catalog`). XLSX import is still deferred (issue #16 — needs a reader library
+sign-off). All routes below are `auth:sanctum`.
 
 | Method | Path | Role / ownership | Notes |
 |---|---|---|---|
@@ -479,6 +481,9 @@ import (XLSX/CSV) is not built** (issue #16). All routes below are `auth:sanctum
 | **POST** | **`/products/{product}/media`** | **owner (else 403)** | **Multipart `file`** — one image, validated by extension + MIME + size (`catalog.media.*`), stored on the public disk at `products/{id}/…`. Cap `catalog.media.max_per_product` (default 10) → **422**. → **201**, `body.media: { id, disk, path, mime_type, size, original_name, type, sort_order, url }`. |
 | **PATCH** | **`/products/{product}/media/order`** | **owner (else 403)** | Body `media: [id, …]` — the **full** ordered id list; index 0 is the cover. A partial or foreign list → **422**. → `body.media: [ … ]`. |
 | **DELETE** | **`/products/{product}/media/{media}`** | **owner (else 403)** | Deletes the file from the disk and the row. Wrong product for the media id → **404**. |
+| GET | `/products/import/template` | seller | Downloads the CSV template — header row + one worked example, UTF-8 BOM. `Content-Disposition: attachment`. Compound columns: `color_ids` (`3;7`), `price_tiers` (`50:41.00;200:38.50`), `price_on_contact` (`1`/`0`). |
+| POST | `/products/import` | importer/retailer (not wholesaler/customer) | Multipart `file` — CSV (`mimes:csv,txt`, ≤2 MB). Stashes the file, creates a `product_import_batches` row, dispatches a **queued job**, returns **202** `body.import: { id, status, … }`. |
+| GET | `/products/import/{import}` | batch owner (else 403) | Batch status + per-row report. `body.import.rows: [{ row_number, status: imported\|failed\|limit_rejected, product_id, errors }]`. `row_number` is the physical file line (header = line 1). Each valid row → a `pending_review` product (same queue as manual create, BR-SEL-02); a bad row is `failed` with its validation `errors` and skipped (spec §4.2); rows past `product_limit` (BR-SEL-01) are `limit_rejected` carrying `errors.product_limit` (the upgrade prompt, US-SEL-10) and nothing is created for them. On completion (or file-read failure) a `ProductImportCompleted` event fires — the seller notification is Phase 8; until then, poll this endpoint. |
 | GET | `/admin/products` | admin (else 403) | Pending-review queue. |
 | POST | `/admin/products/{product}/approve` | admin (else 403) | `pending_review` → `published`; blocked **422** if the product has no image. Audit `product.approved`, event `ProductApproved`. |
 | POST | `/admin/products/{product}/reject` | admin (else 403) | Body `reason`. → `rejected` + reason. Audit `product.rejected`. |
@@ -488,7 +493,8 @@ The primary/cover image is the media row with the lowest `sort_order`
 (`ProductCardResource.primary_image`). **AVL-NFR-03** (never lose product data on a failed
 image upload) holds by construction: the product always exists before any media call.
 
-Still pending: **`POST /products/import`** + template download + per-row result report (#16).
+Still pending on #16: an **XLSX** reader (CSV works today; XLSX needs a spreadsheet library
+sign-off).
 
 Out of scope (later phases): Chat (7), Notifications (8), rest of Admin (9),
 Orders/Payments/Shipping (R2–R4).

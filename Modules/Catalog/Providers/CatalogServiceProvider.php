@@ -5,6 +5,8 @@ namespace Modules\Catalog\Providers;
 use Illuminate\Support\Facades\Gate;
 use Modules\Catalog\Actions\CreateProduct;
 use Modules\Catalog\Models\Product;
+use Modules\Catalog\Models\ProductImportBatch;
+use Modules\Catalog\Policies\ProductImportBatchPolicy;
 use Modules\Catalog\Policies\ProductPolicy;
 use Nwidart\Modules\Support\ModuleServiceProvider;
 
@@ -30,6 +32,7 @@ class CatalogServiceProvider extends ModuleServiceProvider
         $this->loadTranslationsFrom(module_path($this->name, 'lang'), 'catalog');
 
         Gate::policy(Product::class, ProductPolicy::class);
+        Gate::policy(ProductImportBatch::class, ProductImportBatchPolicy::class);
     }
 
     public function register(): void

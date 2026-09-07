@@ -1,7 +1,7 @@
 # THOB Postman Collection
 
 Hand-maintained, seeded from the live route inventory + FormRequest/Resource source
-(2026-09-06). Covers **phases 0, 1, 2, 3 (products + media), 4, 5, 6** — 57 requests in 8 folders.
+(2026-09-07). Covers **phases 0, 1, 2, 3 (products + media + CSV import), 4, 5, 6** — 60 requests in 8 folders.
 
 | File | What it is |
 |---|---|

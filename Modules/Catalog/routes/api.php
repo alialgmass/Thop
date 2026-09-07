@@ -3,6 +3,7 @@
 use Illuminate\Support\Facades\Route;
 use Modules\Catalog\Http\Controllers\AdminProductReviewController;
 use Modules\Catalog\Http\Controllers\ProductController;
+use Modules\Catalog\Http\Controllers\ProductImportController;
 use Modules\Catalog\Http\Controllers\ProductMediaController;
 
 Route::middleware(['auth:sanctum'])->prefix('v1')->group(function () {
@@ -13,6 +14,13 @@ Route::middleware(['auth:sanctum'])->prefix('v1')->group(function () {
     Route::prefix('products')->name('products.')->group(function () {
         Route::get('/mine', [ProductController::class, 'index'])->name('mine');
         Route::get('/mine/{product}', [ProductController::class, 'show'])->name('mine.show');
+
+        // Bulk import (US-SEL-09/US-SEL-10). CSV only for now; queued per-row
+        // processing lands products in the normal pending_review queue.
+        Route::get('/import/template', [ProductImportController::class, 'template'])->name('import.template');
+        Route::post('/import', [ProductImportController::class, 'store'])->name('import.store');
+        Route::get('/import/{import}', [ProductImportController::class, 'show'])->name('import.show');
+
         Route::post('/', [ProductController::class, 'store'])->name('store');
         Route::patch('/{product}', [ProductController::class, 'update'])->name('update');
         Route::delete('/{product}', [ProductController::class, 'destroy'])->name('destroy');

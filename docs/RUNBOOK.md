@@ -121,7 +121,7 @@ Config: `phpunit.xml` forces `DB_CONNECTION=sqlite`, `DB_DATABASE=:memory:`,
 
 ```bash
 # everything
-php artisan test --compact                       # 296 tests, ~1-3 min
+php artisan test --compact                       # 338 tests, ~1-3 min
 
 # one module / phase
 php artisan test --compact Modules/Auth           # Phase 0
@@ -145,11 +145,11 @@ Current baseline (2026-09-06, SQLite `:memory:`):
 
 | Suite | Tests | Pass | Fail | Skip |
 |---|---|---|---|---|
-| Full | 328 | 328 | 0 | 0 |
+| Full | 338 | 338 | 0 | 0 |
 | Auth | 50 | 50 | 0 | 0 |
 | Businesses + Verification + Admin | 52 | 52 | 0 | 0 |
 | Subscriptions | 72 | 72 | 0 | 0 |
-| Catalog | 21 | 21 | 0 | 0 |
+| Catalog | 31 | 31 | 0 | 0 |
 | Search | 37 | 37 | 0 | 0 |
 | Favorites + Comparison | 15 | 15 | 0 | 0 |
 | Inquiries | 37 | 37 | 0 | 0 |
