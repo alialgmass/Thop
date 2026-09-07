@@ -10,5 +10,6 @@
     "Search": true,
     "Favorites": true,
     "Comparison": true,
-    "Inquiries": true
+    "Inquiries": true,
+    "Chat": true
 }

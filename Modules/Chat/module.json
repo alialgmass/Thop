@@ -1,0 +1,11 @@
+{
+    "name": "Chat",
+    "alias": "chat",
+    "description": "Realtime buyer-seller messaging bound to an Inquiry (US-CHT-01..09). MySQL is the source of truth; Pusher is a non-authoritative delivery optimization.",
+    "keywords": [],
+    "priority": 0,
+    "providers": [
+        "Modules\\Chat\\Providers\\ChatServiceProvider"
+    ],
+    "files": []
+}
