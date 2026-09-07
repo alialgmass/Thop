@@ -16,20 +16,21 @@ class VerificationRequestsTable
             ->defaultSort('submitted_at', 'desc')
             ->columns([
                 TextColumn::make('businessAccount.company_name')
-                    ->label('Business')
+                    ->label(__('verification::panel.columns.business'))
                     ->searchable()
                     ->sortable(),
                 TextColumn::make('businessAccount.owner.phone')
-                    ->label('Owner')
+                    ->label(__('verification::panel.columns.owner'))
                     ->searchable(),
                 TextColumn::make('businessAccount.governorate.name_en')
-                    ->label('Governorate')
+                    ->label(__('verification::panel.columns.governorate'))
                     ->toggleable(),
                 TextColumn::make('documents_count')
                     ->counts('documents')
-                    ->label('Docs')
+                    ->label(__('verification::panel.columns.docs'))
                     ->badge(),
                 TextColumn::make('status')
+                    ->label(__('verification::panel.columns.status'))
                     ->badge()
                     ->color(fn (VerificationRequestStatus $state): string => match ($state) {
                         VerificationRequestStatus::Pending => 'warning',
@@ -38,16 +39,18 @@ class VerificationRequestsTable
                     })
                     ->sortable(),
                 TextColumn::make('submitted_at')
+                    ->label(__('verification::panel.columns.submitted_at'))
                     ->dateTime()
                     ->sortable()
-                    ->placeholder('Not submitted'),
+                    ->placeholder(__('verification::panel.columns.not_submitted')),
                 TextColumn::make('reviewer.phone')
-                    ->label('Reviewed by')
+                    ->label(__('verification::panel.columns.reviewed_by'))
                     ->placeholder('—')
                     ->toggleable(),
             ])
             ->filters([
                 SelectFilter::make('status')
+                    ->label(__('verification::panel.columns.status'))
                     ->options(VerificationRequestStatus::class)
                     ->default(VerificationRequestStatus::Pending->value),
             ])

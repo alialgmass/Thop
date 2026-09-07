@@ -22,25 +22,26 @@ class ViewSubscription extends ViewRecord
     public function infolist(Schema $schema): Schema
     {
         return $schema->components([
-            Section::make('Business')
+            Section::make(__('subscriptions::panel.sections.business'))
                 ->columns(2)
                 ->schema([
-                    TextEntry::make('businessAccount.company_name')->label('Company'),
-                    TextEntry::make('businessAccount.activity')->label('Activity'),
-                    TextEntry::make('businessAccount.owner.phone')->label('Owner phone'),
-                    TextEntry::make('businessAccount.owner.email')->label('Owner email')->placeholder('—'),
+                    TextEntry::make('businessAccount.company_name')->label(__('subscriptions::panel.fields.company')),
+                    TextEntry::make('businessAccount.activity')->label(__('subscriptions::panel.fields.activity')),
+                    TextEntry::make('businessAccount.owner.phone')->label(__('subscriptions::panel.fields.owner_phone')),
+                    TextEntry::make('businessAccount.owner.email')->label(__('subscriptions::panel.fields.owner_email'))->placeholder('—'),
                 ]),
 
-            Section::make('Subscription')
+            Section::make(__('subscriptions::panel.sections.subscription'))
                 ->columns(2)
                 ->schema([
                     TextEntry::make('plan.name')
-                        ->label('Plan')
+                        ->label(__('subscriptions::panel.fields.plan'))
                         ->badge(),
                     TextEntry::make('plan.account_type')
-                        ->label('Account Type')
+                        ->label(__('subscriptions::panel.fields.account_type'))
                         ->badge(),
                     TextEntry::make('status')
+                        ->label(__('subscriptions::panel.fields.status'))
                         ->badge()
                         ->color(fn (SubscriptionStatus $state): string => match ($state) {
                             SubscriptionStatus::Active => 'success',
@@ -49,22 +50,22 @@ class ViewSubscription extends ViewRecord
                             SubscriptionStatus::Restricted => 'gray',
                         }),
                     TextEntry::make('plan.price')
-                        ->label('Price')
-                        ->formatStateUsing(fn ($state): string => $state !== null ? number_format((float) $state, 2) : 'Custom'),
+                        ->label(__('subscriptions::panel.fields.price'))
+                        ->formatStateUsing(fn ($state): string => $state !== null ? number_format((float) $state, 2) : __('subscriptions::panel.fields.custom')),
                     TextEntry::make('current_period_end')
-                        ->label('Period Ends')
+                        ->label(__('subscriptions::panel.fields.period_ends'))
                         ->dateTime()
                         ->placeholder('—'),
                     TextEntry::make('trial_ends_at')
-                        ->label('Trial Ends')
+                        ->label(__('subscriptions::panel.fields.trial_ends'))
                         ->dateTime()
                         ->placeholder('—'),
                     TextEntry::make('created_at')
-                        ->label('Subscribed Since')
+                        ->label(__('subscriptions::panel.fields.subscribed_since'))
                         ->dateTime(),
                 ]),
 
-            Section::make('Entitlements')
+            Section::make(__('subscriptions::panel.sections.entitlements'))
                 ->schema([
                     TextEntry::make('plan.entitlements')
                         ->hiddenLabel()
@@ -79,38 +80,38 @@ class ViewSubscription extends ViewRecord
     {
         return [
             Action::make('grantTrial')
-                ->label('Grant Trial/Promo')
+                ->label(__('subscriptions::panel.actions.grant_trial'))
                 ->icon('heroicon-o-gift')
                 ->color('primary')
                 ->visible(fn (): bool => ! $this->record->isActive())
                 ->schema([
                     Select::make('plan_id')
-                        ->label('Plan')
+                        ->label(__('subscriptions::panel.fields.plan'))
                         ->options(fn () => SubscriptionPlan::where('is_active', true)
                             ->pluck('name', 'id'))
                         ->required(),
                     DatePicker::make('trial_ends_at')
-                        ->label('Trial Ends')
+                        ->label(__('subscriptions::panel.fields.trial_ends'))
                         ->required()
                         ->minDate(now()),
                 ])
                 ->action(fn (array $data) => $this->grantTrial($data)),
 
             Action::make('extendPeriod')
-                ->label('Extend Period')
+                ->label(__('subscriptions::panel.actions.extend_period'))
                 ->icon('heroicon-o-calendar')
                 ->color('warning')
                 ->visible(fn (): bool => $this->record->isActive())
                 ->schema([
                     DatePicker::make('new_period_end')
-                        ->label('New Period End Date')
+                        ->label(__('subscriptions::panel.fields.new_period_end'))
                         ->required()
                         ->minDate(now()->addDay()),
                 ])
                 ->action(fn (array $data) => $this->extendPeriod($data)),
 
             Action::make('cancel')
-                ->label('Cancel Subscription')
+                ->label(__('subscriptions::panel.actions.cancel'))
                 ->icon('heroicon-o-x-circle')
                 ->color('danger')
                 ->visible(fn (): bool => $this->record->isActive())
@@ -131,7 +132,7 @@ class ViewSubscription extends ViewRecord
             'current_period_end' => null,
         ]);
 
-        Notification::make()->success()->title('Trial/Promo granted.')->send();
+        Notification::make()->success()->title(__('subscriptions::panel.actions.trial_granted'))->send();
 
         $this->refreshFormData(['status', 'plan', 'trial_ends_at', 'current_period_end']);
     }
@@ -145,7 +146,7 @@ class ViewSubscription extends ViewRecord
             'current_period_end' => $data['new_period_end'],
         ]);
 
-        Notification::make()->success()->title('Subscription period extended.')->send();
+        Notification::make()->success()->title(__('subscriptions::panel.actions.period_extended'))->send();
 
         $this->refreshFormData(['current_period_end']);
     }
@@ -159,7 +160,7 @@ class ViewSubscription extends ViewRecord
             'status' => SubscriptionStatus::Cancelled,
         ]);
 
-        Notification::make()->success()->title('Subscription cancelled.')->send();
+        Notification::make()->success()->title(__('subscriptions::panel.actions.cancelled'))->send();
 
         $this->refreshFormData(['status']);
     }

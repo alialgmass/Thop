@@ -13,6 +13,7 @@ use Modules\Subscriptions\Filament\Resources\SubscriptionPlans\Pages\ListSubscri
 use Modules\Subscriptions\Filament\Resources\SubscriptionPlans\Schemas\SubscriptionPlanForm;
 use Modules\Subscriptions\Filament\Resources\SubscriptionPlans\Tables\SubscriptionPlansTable;
 use Modules\Subscriptions\Models\SubscriptionPlan;
+use UnitEnum;
 
 class SubscriptionPlanResource extends Resource
 {
@@ -20,9 +21,29 @@ class SubscriptionPlanResource extends Resource
 
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedCreditCard;
 
-    protected static ?string $navigationLabel = 'Subscription Plans';
+    protected static string|UnitEnum|null $navigationGroup = null;
 
     protected static ?int $navigationSort = 20;
+
+    public static function getNavigationGroup(): ?string
+    {
+        return __('panel.nav.billing');
+    }
+
+    public static function getNavigationLabel(): string
+    {
+        return __('subscriptions::panel.plan.plural');
+    }
+
+    public static function getModelLabel(): string
+    {
+        return __('subscriptions::panel.plan.label');
+    }
+
+    public static function getPluralModelLabel(): string
+    {
+        return __('subscriptions::panel.plan.plural');
+    }
 
     public static function form(Schema $schema): Schema
     {

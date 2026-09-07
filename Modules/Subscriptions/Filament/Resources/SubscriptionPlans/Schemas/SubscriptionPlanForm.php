@@ -15,51 +15,57 @@ class SubscriptionPlanForm
     {
         return $schema
             ->components([
-                Section::make('Plan Details')
+                Section::make(__('subscriptions::panel.sections.plan_details'))
                     ->columns(2)
                     ->schema([
                         TextInput::make('name')
+                            ->label(__('subscriptions::panel.fields.name'))
                             ->required()
                             ->maxLength(255),
                         Select::make('account_type')
+                            ->label(__('subscriptions::panel.fields.account_type'))
                             ->options([
-                                'importer' => 'Importer',
-                                'wholesaler' => 'Wholesaler',
-                                'retailer' => 'Retailer',
+                                'importer' => __('subscriptions::panel.account_types.importer'),
+                                'wholesaler' => __('subscriptions::panel.account_types.wholesaler'),
+                                'retailer' => __('subscriptions::panel.account_types.retailer'),
                             ])
                             ->required(),
                         TextInput::make('price')
-                            ->label('Price')
+                            ->label(__('subscriptions::panel.fields.price'))
                             ->numeric()
                             ->step(0.01)
-                            ->placeholder('Leave empty for custom pricing'),
+                            ->placeholder(__('subscriptions::panel.fields.price_custom_hint')),
                         Select::make('billing_cycle')
+                            ->label(__('subscriptions::panel.fields.billing_cycle'))
                             ->options([
-                                'monthly' => 'Monthly',
-                                'annual' => 'Annual',
+                                'monthly' => __('subscriptions::panel.billing_cycles.monthly'),
+                                'annual' => __('subscriptions::panel.billing_cycles.annual'),
                             ])
                             ->nullable()
-                            ->placeholder('None'),
+                            ->placeholder(__('subscriptions::panel.fields.none')),
                         Toggle::make('is_active')
+                            ->label(__('subscriptions::panel.fields.is_active'))
                             ->default(true),
                     ]),
 
-                Section::make('Entitlements')
-                    ->description('Key/value pairs — admin can edit without a migration (MNT-NFR-02).')
+                Section::make(__('subscriptions::panel.sections.entitlements'))
+                    ->description(__('subscriptions::panel.sections.entitlements_hint'))
                     ->schema([
                         Repeater::make('entitlements')
                             ->relationship()
                             ->schema([
                                 TextInput::make('key')
+                                    ->label(__('subscriptions::panel.fields.entitlement_key'))
                                     ->required()
-                                    ->placeholder('e.g. product_limit'),
+                                    ->placeholder(__('subscriptions::panel.fields.entitlement_key_hint')),
                                 TextInput::make('value')
+                                    ->label(__('subscriptions::panel.fields.entitlement_value'))
                                     ->required()
-                                    ->placeholder('e.g. Large, true, 100'),
+                                    ->placeholder(__('subscriptions::panel.fields.entitlement_value_hint')),
                             ])
                             ->columns(2)
                             ->defaultItems(0)
-                            ->addActionLabel('Add Entitlement')
+                            ->addActionLabel(__('subscriptions::panel.fields.add_entitlement'))
                             ->reorderable(),
                     ]),
             ]);

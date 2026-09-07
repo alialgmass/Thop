@@ -15,21 +15,26 @@ class UsersTable
         return $table
             ->columns([
                 TextColumn::make('phone')
+                    ->label(__('panel.user.fields.phone'))
                     ->searchable(),
                 TextColumn::make('email')
-                    ->label('Email address')
+                    ->label(__('panel.user.fields.email'))
                     ->searchable(),
                 TextColumn::make('account_type')
+                    ->label(__('panel.user.fields.account_type'))
                     ->badge()
                     ->sortable(),
                 TextColumn::make('status')
+                    ->label(__('panel.user.fields.status'))
                     ->badge()
                     ->sortable(),
                 TextColumn::make('created_at')
+                    ->label(__('panel.common.created_at'))
                     ->dateTime()
                     ->sortable()
                     ->toggleable(isToggledHiddenByDefault: true),
                 TextColumn::make('updated_at')
+                    ->label(__('panel.common.updated_at'))
                     ->dateTime()
                     ->sortable()
                     ->toggleable(isToggledHiddenByDefault: true),

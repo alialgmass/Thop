@@ -12,8 +12,10 @@ class RoleForm
         return $schema
             ->components([
                 TextInput::make('name')
+                    ->label(__('panel.role.fields.name'))
                     ->required(),
                 TextInput::make('guard_name')
+                    ->label(__('panel.common.guard_name'))
                     ->required(),
             ]);
     }

@@ -9,6 +9,7 @@ use Filament\Tables\Table;
 use Modules\Admin\Filament\Resources\AuditLogs\Pages\ListAuditLogs;
 use Modules\Admin\Filament\Resources\AuditLogs\Tables\AuditLogsTable;
 use Modules\Admin\Models\AuditLog;
+use UnitEnum;
 
 /**
  * Read-only window onto the immutable audit trail (US-ADM-09, BR-ADM-01). No
@@ -20,9 +21,29 @@ class AuditLogResource extends Resource
 
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedClipboardDocumentList;
 
-    protected static ?string $navigationLabel = 'Audit Log';
+    protected static string|UnitEnum|null $navigationGroup = null;
 
     protected static ?int $navigationSort = 90;
+
+    public static function getNavigationGroup(): ?string
+    {
+        return __('panel.nav.system');
+    }
+
+    public static function getNavigationLabel(): string
+    {
+        return __('admin::panel.audit_log.plural');
+    }
+
+    public static function getModelLabel(): string
+    {
+        return __('admin::panel.audit_log.label');
+    }
+
+    public static function getPluralModelLabel(): string
+    {
+        return __('admin::panel.audit_log.plural');
+    }
 
     public static function table(Table $table): Table
     {

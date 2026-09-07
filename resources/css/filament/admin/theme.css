@@ -2,4 +2,7 @@
 
 @source '../../../../app/Filament/**/*';
 @source '../../../../resources/views/filament/**/*';
+@source '../../../../Modules/Admin/Filament/**/*';
 @source '../../../../Modules/Subscriptions/Filament/**/*';
+@source '../../../../Modules/Verification/Filament/**/*';
+@source '../../../../vendor/bezhansalleh/filament-language-switch/**/*';

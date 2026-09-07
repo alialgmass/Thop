@@ -18,4 +18,11 @@ class AdminServiceProvider extends ModuleServiceProvider
     protected array $providers = [
         RouteServiceProvider::class,
     ];
+
+    public function boot(): void
+    {
+        parent::boot();
+
+        $this->loadTranslationsFrom(module_path($this->name, 'lang'), 'admin');
+    }
 }

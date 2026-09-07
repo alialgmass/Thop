@@ -12,8 +12,10 @@ class PermissionForm
         return $schema
             ->components([
                 TextInput::make('name')
+                    ->label(__('panel.permission.fields.name'))
                     ->required(),
                 TextInput::make('guard_name')
+                    ->label(__('panel.common.guard_name'))
                     ->required(),
             ]);
     }

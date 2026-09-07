@@ -31,11 +31,14 @@ class AdminPanelProvider extends PanelProvider
             ->colors([
                 'primary' => Color::Blue,
             ])
-            ->brandName('THOB Admin')
+            ->brandName(fn (): string => __('panel.brand'))
             ->viteTheme('resources/css/filament/admin/theme.css')
-            ->discoverResources(in: app_path('Filament/Resources'), for: 'App\Filament\Resources')
+            // Discovery order fixes the navigation-group order (Moderation →
+            // Billing → Access Control → System) without a locale-sensitive
+            // navigationGroups() list.
             ->discoverResources(in: base_path('Modules/Verification/Filament/Resources'), for: 'Modules\Verification\Filament\Resources')
             ->discoverResources(in: base_path('Modules/Subscriptions/Filament/Resources'), for: 'Modules\Subscriptions\Filament\Resources')
+            ->discoverResources(in: app_path('Filament/Resources'), for: 'App\Filament\Resources')
             ->discoverResources(in: base_path('Modules/Admin/Filament/Resources'), for: 'Modules\Admin\Filament\Resources')
             ->discoverPages(in: app_path('Filament/Pages'), for: 'App\Filament\Pages')
             ->pages([

@@ -11,6 +11,7 @@ use Modules\Subscriptions\Filament\Resources\Subscriptions\Pages\ListSubscriptio
 use Modules\Subscriptions\Filament\Resources\Subscriptions\Pages\ViewSubscription;
 use Modules\Subscriptions\Filament\Resources\Subscriptions\Tables\SubscriptionsTable;
 use Modules\Subscriptions\Models\Subscription;
+use UnitEnum;
 
 class SubscriptionResource extends Resource
 {
@@ -18,9 +19,29 @@ class SubscriptionResource extends Resource
 
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedUserGroup;
 
-    protected static ?string $navigationLabel = 'Subscriptions';
+    protected static string|UnitEnum|null $navigationGroup = null;
 
     protected static ?int $navigationSort = 25;
+
+    public static function getNavigationGroup(): ?string
+    {
+        return __('panel.nav.billing');
+    }
+
+    public static function getNavigationLabel(): string
+    {
+        return __('subscriptions::panel.subscription.plural');
+    }
+
+    public static function getModelLabel(): string
+    {
+        return __('subscriptions::panel.subscription.label');
+    }
+
+    public static function getPluralModelLabel(): string
+    {
+        return __('subscriptions::panel.subscription.plural');
+    }
 
     public static function table(Table $table): Table
     {
