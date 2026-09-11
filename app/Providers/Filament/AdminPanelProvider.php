@@ -37,6 +37,7 @@ class AdminPanelProvider extends PanelProvider
             // Billing, Access Control, System) — locale-independent, unlike a
             // navigationGroups() list of translated strings.
             ->discoverResources(in: base_path('Modules/Verification/Filament/Resources'), for: 'Modules\Verification\Filament\Resources')
+            ->discoverResources(in: base_path('Modules/Inquiries/Filament/Resources'), for: 'Modules\Inquiries\Filament\Resources')
             ->discoverResources(in: base_path('Modules/Catalog/Filament/Resources'), for: 'Modules\Catalog\Filament\Resources')
             ->discoverResources(in: base_path('Modules/Taxonomy/Filament/Resources'), for: 'Modules\Taxonomy\Filament\Resources')
             ->discoverResources(in: base_path('Modules/Search/Filament/Resources'), for: 'Modules\Search\Filament\Resources')

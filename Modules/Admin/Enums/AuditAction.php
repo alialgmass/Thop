@@ -33,4 +33,6 @@ enum AuditAction: string
 
     case AccountSuspended = 'account.suspended';
     case AccountReactivated = 'account.reactivated';
+
+    case ReportResolved = 'report.resolved';
 }

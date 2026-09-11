@@ -10,4 +10,5 @@ return [
     'rfq_created' => 'Your request for quotation has been sent.',
     'rfq_product_mismatch' => 'The product does not belong to this inquiry\'s seller.',
     'quotation_sent' => 'Your quotation has been sent.',
+    'report_already_resolved' => 'This report has already been resolved.',
 ];

@@ -13,7 +13,8 @@ use Modules\Inquiries\Models\Report;
 /**
  * One message on a conversation (US-CHT-03). Immutable except `read_at`,
  * which only ever transitions null → timestamp — hence {@see self::UPDATED_AT}
- * is disabled, the same shape as {@see Report}.
+ * is disabled. {@see Report} used to share this shape before Phase 9 · T9
+ * gave it a real resolution workflow (and a real `updated_at` column).
  *
  * @property int $id
  * @property int $conversation_id

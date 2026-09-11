@@ -1,6 +1,7 @@
 <?php
 
 use Illuminate\Support\Facades\Route;
+use Modules\Inquiries\Http\Controllers\AdminReportController;
 use Modules\Inquiries\Http\Controllers\InquiryController;
 use Modules\Inquiries\Http\Controllers\QuotationController;
 use Modules\Inquiries\Http\Controllers\ReportController;
@@ -18,4 +19,14 @@ Route::middleware('auth:sanctum')->prefix('v1')->name('inquiries.')->group(funct
 
     Route::get('rfqs/{rfq}', [RfqController::class, 'show'])->name('rfqs.show');
     Route::post('rfqs/{rfq}/quotations', [QuotationController::class, 'store'])->name('rfqs.quotations.store');
+});
+
+/**
+ * Admin dispute/report queue (US-ADM-08, Phase 9 · T9). Gated by
+ * `auth:sanctum` + the `admin` role middleware — the same gate every other
+ * admin-only controller uses.
+ */
+Route::middleware(['auth:sanctum', 'admin'])->prefix('v1/admin/reports')->name('admin.reports.')->group(function (): void {
+    Route::get('/', [AdminReportController::class, 'index'])->name('index');
+    Route::post('{report}/resolve', [AdminReportController::class, 'resolve'])->name('resolve');
 });
