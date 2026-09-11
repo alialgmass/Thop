@@ -26,4 +26,8 @@ enum AuditAction: string
 
     case FeaturedPlaced = 'featured.placed';
     case FeaturedRemoved = 'featured.removed';
+
+    case BannerCreated = 'banner.created';
+    case BannerUpdated = 'banner.updated';
+    case BannerRemoved = 'banner.removed';
 }

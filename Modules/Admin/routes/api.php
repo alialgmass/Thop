@@ -2,6 +2,15 @@
 
 use Illuminate\Support\Facades\Route;
 use Modules\Admin\Http\Controllers\AuditLogController;
+use Modules\Admin\Http\Controllers\BannerController;
+
+/**
+ * Public — the separate marketplace client's homepage (Phase 9 · T6). No
+ * authentication; this repo has no homepage of its own to render it on.
+ * Management is Filament-only (issue #35 asks for no admin REST surface
+ * here, unlike the other Phase 9 tickets).
+ */
+Route::get('v1/banners', [BannerController::class, 'index'])->name('banners.index');
 
 /**
  * Back-office REST surface (spec §11, "admin"). Every route here is gated by
