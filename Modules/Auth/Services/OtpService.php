@@ -86,6 +86,10 @@ class OtpService
 
     private function generateCode(): string
     {
+        if (app()->isLocal()) {
+            return '111111';
+        }
+
         $length = $this->codeLength();
 
         return str_pad((string) random_int(0, (10 ** $length) - 1), $length, '0', STR_PAD_LEFT);
