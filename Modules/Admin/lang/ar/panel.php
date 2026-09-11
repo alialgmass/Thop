@@ -20,6 +20,17 @@ return [
         'entity' => 'العنصر',
     ],
 
+    'dashboard' => [
+        'active_sellers' => 'البائعون النشِطون',
+        'active_products' => 'المنتجات النشِطة',
+        'active_buyers' => 'المشترون النشِطون',
+        'inquiries' => 'الاستفسارات',
+        'top_zero_result_term' => 'أكثر كلمة بحث بلا نتائج',
+        'zero_result_hint' => 'كلمة بحث مرجعتش نتائج — طلب غير مُلبّى.',
+        'last_days' => 'آخر :days يوم',
+        'none' => 'لا يوجد',
+    ],
+
     'banner' => [
         'label' => 'بانر',
         'plural' => 'البانرات',

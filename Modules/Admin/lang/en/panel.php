@@ -20,6 +20,17 @@ return [
         'entity' => 'Entity',
     ],
 
+    'dashboard' => [
+        'active_sellers' => 'Active sellers',
+        'active_products' => 'Active products',
+        'active_buyers' => 'Active buyers',
+        'inquiries' => 'Inquiries',
+        'top_zero_result_term' => 'Top zero-result term',
+        'zero_result_hint' => 'A search term that returned nothing — unmet demand.',
+        'last_days' => 'Last :days days',
+        'none' => 'None',
+    ],
+
     'banner' => [
         'label' => 'Banner',
         'plural' => 'Banners',

@@ -3,6 +3,7 @@
 use Illuminate\Support\Facades\Route;
 use Modules\Admin\Http\Controllers\AuditLogController;
 use Modules\Admin\Http\Controllers\BannerController;
+use Modules\Admin\Http\Controllers\LiquidityDashboardController;
 
 /**
  * Public — the separate marketplace client's homepage (Phase 9 · T6). No
@@ -22,4 +23,6 @@ Route::middleware(['auth:sanctum', 'admin'])
     ->name('admin.')
     ->group(function () {
         Route::get('audit-logs', [AuditLogController::class, 'index'])->name('audit-logs.index');
+
+        Route::get('dashboard/liquidity', [LiquidityDashboardController::class, 'index'])->name('dashboard.liquidity');
     });

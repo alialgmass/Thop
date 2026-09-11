@@ -48,6 +48,7 @@ class AdminPanelProvider extends PanelProvider
                 Dashboard::class,
             ])
             ->discoverWidgets(in: app_path('Filament/Widgets'), for: 'App\Filament\Widgets')
+            ->discoverWidgets(in: base_path('Modules/Admin/Filament/Widgets'), for: 'Modules\Admin\Filament\Widgets')
             ->widgets([
                 AccountWidget::class,
             ])
