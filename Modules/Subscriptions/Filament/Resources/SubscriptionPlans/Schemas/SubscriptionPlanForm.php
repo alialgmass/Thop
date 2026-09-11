@@ -43,6 +43,11 @@ class SubscriptionPlanForm
                             ])
                             ->nullable()
                             ->placeholder(__('subscriptions::panel.fields.none')),
+                        TextInput::make('trial_days')
+                            ->label(__('subscriptions::panel.fields.trial_days'))
+                            ->numeric()
+                            ->minValue(1)
+                            ->placeholder(__('subscriptions::panel.fields.none')),
                         Toggle::make('is_active')
                             ->label(__('subscriptions::panel.fields.is_active'))
                             ->default(true),

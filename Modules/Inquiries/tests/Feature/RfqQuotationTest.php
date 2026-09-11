@@ -11,6 +11,7 @@ use Modules\Inquiries\Models\Quotation;
 use Modules\Inquiries\Models\Rfq;
 use Modules\Subscriptions\Models\Subscription;
 use Modules\Subscriptions\Models\SubscriptionEntitlement;
+use Modules\Subscriptions\Models\SubscriptionEntitlementSnapshot;
 use Modules\Subscriptions\Models\SubscriptionPlan;
 use PHPUnit\Framework\Attributes\Test;
 use Tests\TestCase;
@@ -146,7 +147,11 @@ class RfqQuotationTest extends TestCase
     #[Test]
     public function an_rfq_is_rejected_when_the_seller_is_past_their_inquiry_limit(): void
     {
+        // See InquiryTest::sending_to_a_seller_past_their_inquiry_limit_is_rejected_clearly:
+        // EntitlementService reads the subscription's own snapshot, not the
+        // plan live (Phase 9 T4, US-SUB-05 non-retroactive edits).
         SubscriptionEntitlement::where('key', 'inquiry_limit')->update(['value' => '0']);
+        SubscriptionEntitlementSnapshot::where('key', 'inquiry_limit')->update(['value' => '0']);
 
         $this->actingAs($this->buyer)
             ->postJson("/api/v1/inquiries/{$this->inquiry->id}/rfqs", $this->validRfqPayload())

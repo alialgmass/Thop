@@ -1,7 +1,15 @@
 <?php
 
 use Illuminate\Support\Facades\Route;
+use Modules\Subscriptions\Http\Controllers\AdminSubscriptionPlanController;
 use Modules\Subscriptions\Http\Controllers\SubscriptionController;
+
+Route::middleware(['auth:sanctum', 'admin'])->prefix('v1/admin/subscription-plans')->name('admin.subscription-plans.')->group(function () {
+    Route::get('/', [AdminSubscriptionPlanController::class, 'index'])->name('index');
+    Route::post('/', [AdminSubscriptionPlanController::class, 'store'])->name('store');
+    Route::patch('{plan}', [AdminSubscriptionPlanController::class, 'update'])->name('update');
+    Route::post('{plan}/apply-to-existing', [AdminSubscriptionPlanController::class, 'applyToExisting'])->name('apply-to-existing');
+});
 
 Route::middleware(['auth:sanctum'])->prefix('v1')->group(function () {
     Route::get('subscription-plans', [SubscriptionController::class, 'plans'])

@@ -25,6 +25,7 @@ return [
         'price_custom_hint' => 'اتركه فارغًا للتسعير المخصص',
         'billing_cycle' => 'دورة الفوترة',
         'cycle' => 'الدورة',
+        'trial_days' => 'مدة التجربة (أيام)',
         'is_active' => 'مُفعّلة',
         'entitlements' => 'الصلاحيات',
         'entitlement_key' => 'المفتاح',
@@ -64,5 +65,8 @@ return [
         'trial_granted' => 'تم منح التجربة / الترويج.',
         'period_extended' => 'تم تمديد فترة الاشتراك.',
         'cancelled' => 'تم إلغاء الاشتراك.',
+        'apply_to_existing' => 'تطبيق على الاشتراكات الحالية',
+        'apply_to_existing_confirm' => 'أفهم أن هذا يعيد كتابة صلاحيات كل مشترك مفعّل في هذه الخطة الآن.',
+        'apply_to_existing_done' => 'تم التطبيق على :count اشتراك.',
     ],
 ];

@@ -12,6 +12,7 @@ use Modules\Businesses\Models\BusinessAccount;
 use Modules\Subscriptions\Database\Factories\SubscriptionFactory;
 use Modules\Subscriptions\Enums\SubscriptionStatus;
 use Modules\Subscriptions\Events\SubscriptionExpired;
+use Modules\Subscriptions\Support\SyncsEntitlementRows;
 
 /**
  * @property int $id
@@ -52,6 +53,17 @@ class Subscription extends Model
         return SubscriptionFactory::new();
     }
 
+    protected static function booted(): void
+    {
+        // Every subscription gets its entitlement snapshot taken the moment
+        // it's created — this is the only automatic snapshot point. A later
+        // plan-id change (downgrade taking effect at period end) or an
+        // admin's explicit "apply to existing" both call
+        // syncEntitlementsFromPlan() themselves; nothing else does, which is
+        // what keeps a plain plan edit non-retroactive (US-SUB-05).
+        static::created(fn (self $subscription) => $subscription->syncEntitlementsFromPlan());
+    }
+
     /**
      * @return BelongsTo<BusinessAccount, $this>
      */
@@ -74,6 +86,24 @@ class Subscription extends Model
     public function usageCounters(): HasMany
     {
         return $this->hasMany(SubscriptionUsageCounter::class);
+    }
+
+    /**
+     * @return HasMany<SubscriptionEntitlementSnapshot, $this>
+     */
+    public function entitlementSnapshots(): HasMany
+    {
+        return $this->hasMany(SubscriptionEntitlementSnapshot::class);
+    }
+
+    /**
+     * Overwrite this subscription's entitlement snapshot with its plan's
+     * current entitlements — upsert every key the plan still has, and drop
+     * any snapshot row for a key the plan no longer defines.
+     */
+    public function syncEntitlementsFromPlan(): void
+    {
+        SyncsEntitlementRows::sync($this->entitlementSnapshots(), $this->plan->entitlements->pluck('value', 'key')->all());
     }
 
     public function isActive(): bool

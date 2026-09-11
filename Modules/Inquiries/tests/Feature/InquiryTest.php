@@ -11,6 +11,7 @@ use Modules\Inquiries\Enums\LeadStatus;
 use Modules\Inquiries\Models\Inquiry;
 use Modules\Subscriptions\Models\Subscription;
 use Modules\Subscriptions\Models\SubscriptionEntitlement;
+use Modules\Subscriptions\Models\SubscriptionEntitlementSnapshot;
 use Modules\Subscriptions\Models\SubscriptionPlan;
 use PHPUnit\Framework\Attributes\Test;
 use Tests\TestCase;
@@ -104,7 +105,11 @@ class InquiryTest extends TestCase
     public function sending_to_a_seller_past_their_inquiry_limit_is_rejected_clearly(): void
     {
         // Replace the seller's plan with a zero-limit one instead of a silent drop.
+        // EntitlementService reads the subscription's own snapshot, not the
+        // plan live (Phase 9 T4, US-SUB-05 non-retroactive edits) — update
+        // both so this fixture still represents "already past the limit".
         SubscriptionEntitlement::where('key', 'inquiry_limit')->update(['value' => '0']);
+        SubscriptionEntitlementSnapshot::where('key', 'inquiry_limit')->update(['value' => '0']);
 
         $response = $this->actingAs($this->buyer)
             ->postJson('/api/v1/inquiries', [

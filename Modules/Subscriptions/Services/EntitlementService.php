@@ -13,6 +13,11 @@ use Modules\Subscriptions\Models\SubscriptionUsageCounter;
  * All capability/limit checks MUST go through this service.
  * Never trust client-supplied plan or entitlement claims.
  *
+ * Reads a subscription's own entitlement snapshot ({@see Subscription::entitlementSnapshots()}),
+ * not its plan's entitlements live — a plan edit is non-retroactive by
+ * default (US-SUB-05); only a subscription's own creation/plan-switch or an
+ * admin's explicit "apply to existing" refreshes the snapshot.
+ *
  * Usage:
  *   app(EntitlementService::class)->can($business, 'product_limit')
  *   app(EntitlementService::class)->can($business, 'search_priority')
@@ -36,7 +41,7 @@ class EntitlementService
             return false;
         }
 
-        $entitlement = $subscription->plan->entitlements->firstWhere('key', $key);
+        $entitlement = $subscription->entitlementSnapshots->firstWhere('key', $key);
 
         if (! $entitlement) {
             return false;
@@ -56,7 +61,7 @@ class EntitlementService
             return null;
         }
 
-        return $subscription->plan->entitlements->firstWhere('key', $key)?->value;
+        return $subscription->entitlementSnapshots->firstWhere('key', $key)?->value;
     }
 
     /**

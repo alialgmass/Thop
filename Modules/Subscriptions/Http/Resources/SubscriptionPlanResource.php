@@ -26,6 +26,8 @@ class SubscriptionPlanResource extends JsonResource
             'account_type' => $this->account_type,
             'price' => $this->price !== null ? (float) $this->price : null,
             'billing_cycle' => $this->billing_cycle?->value,
+            'trial_days' => $this->trial_days,
+            'is_active' => $this->is_active,
             'entitlements' => $this->whenLoaded('entitlements', $this->entitlements->map(
                 fn ($e) => ['key' => $e->key, 'value' => $e->value]
             )->values()),

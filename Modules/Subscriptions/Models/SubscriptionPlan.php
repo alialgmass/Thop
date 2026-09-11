@@ -14,6 +14,7 @@ use Modules\Subscriptions\Enums\BillingCycle;
  * @property string $name
  * @property float|null $price
  * @property BillingCycle|null $billing_cycle
+ * @property int|null $trial_days
  * @property bool $is_active
  */
 class SubscriptionPlan extends Model
@@ -31,6 +32,7 @@ class SubscriptionPlan extends Model
         return [
             'price' => 'decimal:2',
             'billing_cycle' => BillingCycle::class,
+            'trial_days' => 'integer',
             'is_active' => 'boolean',
         ];
     }

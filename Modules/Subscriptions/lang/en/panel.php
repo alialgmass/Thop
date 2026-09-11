@@ -25,6 +25,7 @@ return [
         'price_custom_hint' => 'Leave empty for custom pricing',
         'billing_cycle' => 'Billing cycle',
         'cycle' => 'Cycle',
+        'trial_days' => 'Trial length (days)',
         'is_active' => 'Active',
         'entitlements' => 'Entitlements',
         'entitlement_key' => 'Key',
@@ -64,5 +65,8 @@ return [
         'trial_granted' => 'Trial / promo granted.',
         'period_extended' => 'Subscription period extended.',
         'cancelled' => 'Subscription cancelled.',
+        'apply_to_existing' => 'Apply to existing subscriptions',
+        'apply_to_existing_confirm' => 'I understand this rewrites the entitlements of every active subscriber on this plan right now.',
+        'apply_to_existing_done' => 'Applied to :count subscription(s).',
     ],
 ];

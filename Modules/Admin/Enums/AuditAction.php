@@ -19,4 +19,8 @@ enum AuditAction: string
     case TaxonomyCreated = 'taxonomy.created';
     case TaxonomyUpdated = 'taxonomy.updated';
     case TaxonomyDeactivated = 'taxonomy.deactivated';
+
+    case SubscriptionPlanCreated = 'plan.created';
+    case SubscriptionPlanUpdated = 'plan.updated';
+    case SubscriptionPlanAppliedToExisting = 'plan.applied_to_existing';
 }

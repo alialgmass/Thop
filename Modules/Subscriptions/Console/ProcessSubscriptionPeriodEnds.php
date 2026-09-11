@@ -37,6 +37,12 @@ class ProcessSubscriptionPeriodEnds extends Command
                         'notes' => $this->remainingNotes($notes, ['pending_plan_id']),
                         'current_period_end' => now()->addMonth(),
                     ]);
+
+                    // The plan changed, so the entitlement snapshot must be
+                    // retaken from the (new) plan's current entitlements —
+                    // this is the one other automatic sync point besides
+                    // subscription creation (see Subscription::booted()).
+                    $subscription->refresh()->syncEntitlementsFromPlan();
                 } elseif (! empty($notes['cancel_at_period_end'])) {
                     // Cancellation effective at period end (BR-SUB-02).
                     $subscription->update([
