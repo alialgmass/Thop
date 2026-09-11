@@ -38,6 +38,7 @@ class AdminPanelProvider extends PanelProvider
             // navigationGroups() list of translated strings.
             ->discoverResources(in: base_path('Modules/Verification/Filament/Resources'), for: 'Modules\Verification\Filament\Resources')
             ->discoverResources(in: base_path('Modules/Catalog/Filament/Resources'), for: 'Modules\Catalog\Filament\Resources')
+            ->discoverResources(in: base_path('Modules/Taxonomy/Filament/Resources'), for: 'Modules\Taxonomy\Filament\Resources')
             ->discoverResources(in: base_path('Modules/Subscriptions/Filament/Resources'), for: 'Modules\Subscriptions\Filament\Resources')
             ->discoverResources(in: app_path('Filament/Resources'), for: 'App\Filament\Resources')
             ->discoverResources(in: base_path('Modules/Admin/Filament/Resources'), for: 'Modules\Admin\Filament\Resources')

@@ -15,4 +15,8 @@ enum AuditAction: string
     case ProductRejected = 'product.rejected';
     case ProductHidden = 'product.hidden';
     case ProductEditsRequested = 'product.edits_requested';
+
+    case TaxonomyCreated = 'taxonomy.created';
+    case TaxonomyUpdated = 'taxonomy.updated';
+    case TaxonomyDeactivated = 'taxonomy.deactivated';
 }
