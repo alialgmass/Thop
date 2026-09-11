@@ -1,6 +1,7 @@
 <?php
 
 use Illuminate\Support\Facades\Route;
+use Modules\Search\Http\Controllers\AdminFeaturedPlacementController;
 use Modules\Search\Http\Controllers\ProductSearchController;
 use Modules\Search\Http\Controllers\SupplierSearchController;
 
@@ -19,4 +20,11 @@ Route::middleware('optional.sanctum')->prefix('v1')->name('search.')->group(func
     Route::get('/businesses/{business}/catalog', [ProductSearchController::class, 'supplierCatalog'])
         ->whereNumber('business')
         ->name('businesses.catalog');
+});
+
+// Admin curation (US-SRC-10, BR-SRC-01, Phase 9 · T5).
+Route::middleware(['auth:sanctum', 'admin'])->prefix('v1/admin/featured')->name('admin.featured.')->group(function (): void {
+    Route::get('/', [AdminFeaturedPlacementController::class, 'index'])->name('index');
+    Route::post('/', [AdminFeaturedPlacementController::class, 'store'])->name('store');
+    Route::delete('{placement}', [AdminFeaturedPlacementController::class, 'destroy'])->name('destroy');
 });

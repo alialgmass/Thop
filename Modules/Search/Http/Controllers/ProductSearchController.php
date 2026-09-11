@@ -10,6 +10,7 @@ use Modules\Core\Http\Controllers\Controller;
 use Modules\Core\Support\Api\ApiResponse;
 use Modules\Search\Http\Requests\ProductSearchRequest;
 use Modules\Search\Http\Resources\ProductDetailResource;
+use Modules\Search\Services\FeaturedRanker;
 use Modules\Search\Services\ProductSearchService;
 use Modules\Search\Services\ZeroResultLogger;
 
@@ -27,6 +28,7 @@ class ProductSearchController extends Controller
     public function __construct(
         private readonly ProductSearchService $service,
         private readonly ZeroResultLogger $zeroResultLogger,
+        private readonly FeaturedRanker $ranker,
     ) {}
 
     public function index(ProductSearchRequest $request): JsonResponse
@@ -73,6 +75,11 @@ class ProductSearchController extends Controller
             ->find($product);
 
         abort_if($model === null, 404);
+
+        // Single-item rank: same union (admin placement OR plan entitlement)
+        // the list endpoints use, just without the positional boost, which
+        // is meaningless for a lone item (Phase 9 · T5).
+        $this->ranker->rank(collect([$model]), 'featured_products', applyBoost: false);
 
         return $this
             ->apiBody(['product' => new ProductDetailResource($model)])

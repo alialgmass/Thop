@@ -23,4 +23,7 @@ enum AuditAction: string
     case SubscriptionPlanCreated = 'plan.created';
     case SubscriptionPlanUpdated = 'plan.updated';
     case SubscriptionPlanAppliedToExisting = 'plan.applied_to_existing';
+
+    case FeaturedPlaced = 'featured.placed';
+    case FeaturedRemoved = 'featured.removed';
 }

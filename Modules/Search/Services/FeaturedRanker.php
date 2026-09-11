@@ -2,8 +2,10 @@
 
 namespace Modules\Search\Services;
 
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Collection;
 use Modules\Businesses\Models\BusinessAccount;
+use Modules\Search\Models\FeaturedPlacement;
 use Modules\Subscriptions\Services\EntitlementService;
 
 /**
@@ -12,11 +14,12 @@ use Modules\Subscriptions\Services\EntitlementService;
  * The boost is a bounded positional adjustment: a featured row moves up by at
  * most {@see self::BOOST_POSITIONS} places within the already-fetched page. It
  * never removes a non-featured row and never lets a featured row jump an
- * arbitrary distance — a much higher-relevance organic row still wins. Whether
- * a business is featured is resolved server-side from its active subscription
- * every request (a lapsed/downgraded plan loses the boost with no code change),
- * and every row is tagged with a truthful `featured` flag so the client can
- * label it.
+ * arbitrary distance — a much higher-relevance organic row still wins. The
+ * truthful `featured` flag is a union of two independent things (Phase 9 · T5):
+ * an active admin-curated {@see FeaturedPlacement} for that exact item, OR its
+ * active subscription granting the entitlement key — either one is enough,
+ * resolved server-side every request (a lapsed plan or an expired placement
+ * both lose the boost with no code change).
  */
 class FeaturedRanker
 {
@@ -37,8 +40,15 @@ class FeaturedRanker
     {
         $businessResolver ??= fn ($item) => $item->businessAccount;
         $cache = [];
+        $placedIds = $this->activePlacementIds($items);
 
-        $items->each(function ($item) use (&$cache, $entitlementKey, $businessResolver): void {
+        $items->each(function ($item) use (&$cache, $entitlementKey, $businessResolver, $placedIds): void {
+            if (in_array($item->getKey(), $placedIds, true)) {
+                $item->featured = true;
+
+                return;
+            }
+
             $business = $businessResolver($item);
             $businessId = $business?->getKey();
 
@@ -63,5 +73,27 @@ class FeaturedRanker
                 SORT_NUMERIC,
             )
             ->values();
+    }
+
+    /**
+     * One query per rank() call: every item in a page is the same model
+     * class, so this is a single `whereIn` against the placements table
+     * rather than a query per item.
+     *
+     * @param  Collection<int, Model>  $items
+     * @return list<int>
+     */
+    private function activePlacementIds(Collection $items): array
+    {
+        if ($items->isEmpty()) {
+            return [];
+        }
+
+        return FeaturedPlacement::query()
+            ->where('featurable_type', $items->first()->getMorphClass())
+            ->whereIn('featurable_id', $items->map->getKey())
+            ->active()
+            ->pluck('featurable_id')
+            ->all();
     }
 }
