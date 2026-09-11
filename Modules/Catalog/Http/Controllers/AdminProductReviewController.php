@@ -31,7 +31,7 @@ class AdminProductReviewController extends Controller
 
     public function queue(Request $request): JsonResponse
     {
-        abort_unless($this->policy->viewAny($request->user()), 403);
+        abort_unless($this->policy->reviewQueue($request->user()), 403);
 
         $products = Product::query()
             ->where('status', ProductStatus::PendingReview)
@@ -78,6 +78,18 @@ class AdminProductReviewController extends Controller
 
         return $this
             ->apiMessage('Product hidden.')
+            ->apiBody(['product' => new ProductResource($product->load(['businessAccount', 'colors', 'media']))])
+            ->apiResponse();
+    }
+
+    public function requestEdits(RejectProductRequest $request, Product $product): JsonResponse
+    {
+        abort_unless($this->policy->review($request->user(), $product), 403);
+
+        $this->decide->requestEdits($product, $request->user(), (string) $request->string('reason'));
+
+        return $this
+            ->apiMessage('Edits requested; product returned to draft.')
             ->apiBody(['product' => new ProductResource($product->load(['businessAccount', 'colors', 'media']))])
             ->apiResponse();
     }

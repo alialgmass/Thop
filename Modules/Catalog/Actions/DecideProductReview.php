@@ -8,6 +8,7 @@ use Modules\Admin\Enums\AuditAction;
 use Modules\Admin\Models\AuditLog;
 use Modules\Catalog\Enums\ProductStatus;
 use Modules\Catalog\Events\ProductApproved;
+use Modules\Catalog\Events\ProductEditsRequested;
 use Modules\Catalog\Events\ProductHidden;
 use Modules\Catalog\Events\ProductRejected;
 use Modules\Catalog\Exceptions\ProductNotInReviewException;
@@ -31,16 +32,7 @@ class DecideProductReview
                 ->setCustomBody(['media' => [__('catalog::messages.media_required_to_publish')]]);
         }
 
-        DB::transaction(function () use ($product, $admin): void {
-            $product->forceFill([
-                'status' => ProductStatus::Published,
-                'rejection_reason' => null,
-            ])->save();
-
-            AuditLog::record($admin, AuditAction::ProductApproved, $product, [
-                'business_account_id' => $product->business_account_id,
-            ]);
-        });
+        $this->applyDecision($product, $admin, ProductStatus::Published, AuditAction::ProductApproved, null);
 
         ProductApproved::dispatch($product);
 
@@ -51,19 +43,27 @@ class DecideProductReview
     {
         $this->assertAwaitingReview($product);
 
-        DB::transaction(function () use ($product, $admin, $reason): void {
-            $product->forceFill([
-                'status' => ProductStatus::Rejected,
-                'rejection_reason' => $reason,
-            ])->save();
-
-            AuditLog::record($admin, AuditAction::ProductRejected, $product, [
-                'business_account_id' => $product->business_account_id,
-                'reason' => $reason,
-            ]);
-        });
+        $this->applyDecision($product, $admin, ProductStatus::Rejected, AuditAction::ProductRejected, $reason);
 
         ProductRejected::dispatch($product, $reason);
+
+        return $product;
+    }
+
+    /**
+     * "Request edits": reject-with-reason that returns the product to draft
+     * (instead of `rejected`) so the seller can revise and resubmit. Reuses
+     * the same awaiting-review guard and {@see self::applyDecision()} as
+     * {@see self::reject()} — the only difference is the resulting status,
+     * audit action, and dispatched event.
+     */
+    public function requestEdits(Product $product, User $admin, string $reason): Product
+    {
+        $this->assertAwaitingReview($product);
+
+        $this->applyDecision($product, $admin, ProductStatus::Draft, AuditAction::ProductEditsRequested, $reason);
+
+        ProductEditsRequested::dispatch($product, $reason);
 
         return $product;
     }
@@ -72,19 +72,31 @@ class DecideProductReview
     {
         $this->assertPublished($product);
 
-        DB::transaction(function () use ($product, $admin): void {
-            $product->forceFill([
-                'status' => ProductStatus::Hidden,
-            ])->save();
-
-            AuditLog::record($admin, AuditAction::ProductHidden, $product, [
-                'business_account_id' => $product->business_account_id,
-            ]);
-        });
+        $this->applyDecision($product, $admin, ProductStatus::Hidden, AuditAction::ProductHidden, null);
 
         ProductHidden::dispatch($product);
 
         return $product;
+    }
+
+    /**
+     * The shared transaction shape every decision applies: set the resulting
+     * status (+ reason, when there is one) and write the matching audit-log
+     * row. Callers are responsible for their own state guard and event.
+     */
+    private function applyDecision(Product $product, User $admin, ProductStatus $status, AuditAction $action, ?string $reason): void
+    {
+        DB::transaction(function () use ($product, $admin, $status, $action, $reason): void {
+            $product->forceFill([
+                'status' => $status,
+                'rejection_reason' => $reason,
+            ])->save();
+
+            AuditLog::record($admin, $action, $product, array_filter([
+                'business_account_id' => $product->business_account_id,
+                'reason' => $reason,
+            ], fn ($value): bool => $value !== null));
+        });
     }
 
     private function assertAwaitingReview(Product $product): void

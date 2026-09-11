@@ -14,4 +14,5 @@ enum AuditAction: string
     case ProductApproved = 'product.approved';
     case ProductRejected = 'product.rejected';
     case ProductHidden = 'product.hidden';
+    case ProductEditsRequested = 'product.edits_requested';
 }

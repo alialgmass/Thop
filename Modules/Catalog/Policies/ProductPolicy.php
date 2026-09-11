@@ -28,11 +28,25 @@ class ProductPolicy
     }
 
     /**
-     * A business-account owner may view their own products; admin may view all.
+     * A business-account owner may view their own products.
      */
     public function viewAny(User $user): bool
     {
         return $user->businessAccount()->exists();
+    }
+
+    /**
+     * Admin-only: list the review queue. A dedicated ability rather than
+     * folding this into `viewAny()` — `viewAny()` is also true for any seller
+     * (their own products), and the queue lists every seller's pending
+     * products unscoped, so it must not pass for a non-admin seller. Checked
+     * explicitly here (not left to `before()`) because the admin
+     * review-queue controller calls this method directly rather than through
+     * `Gate::authorize()`, which is the only path that invokes `before()`.
+     */
+    public function reviewQueue(User $user): bool
+    {
+        return $user->hasRole('admin');
     }
 
     /**

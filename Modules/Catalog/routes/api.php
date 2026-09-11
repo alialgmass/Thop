@@ -42,5 +42,6 @@ Route::middleware(['auth:sanctum'])->prefix('v1')->group(function () {
         Route::post('/{product}/approve', [AdminProductReviewController::class, 'approve'])->name('approve');
         Route::post('/{product}/reject', [AdminProductReviewController::class, 'reject'])->name('reject');
         Route::post('/{product}/hide', [AdminProductReviewController::class, 'hide'])->name('hide');
+        Route::post('/{product}/request-edits', [AdminProductReviewController::class, 'requestEdits'])->name('request-edits');
     });
 });
