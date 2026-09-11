@@ -5,6 +5,7 @@ namespace Modules\Auth\Http\Controllers;
 use App\Models\User;
 use Illuminate\Http\JsonResponse;
 use Modules\Auth\Enums\UserStatus;
+use Modules\Auth\Exceptions\PhoneAlreadyRegisteredException;
 use Modules\Auth\Http\Concerns\IssuesApiToken;
 use Modules\Auth\Http\Requests\RegisterRequest;
 use Modules\Core\Exceptions\ApiException\ExceptionResponse;
@@ -25,9 +26,7 @@ class RegisterController extends Controller
         }
 
         if (User::query()->where('phone', $phone)->exists()) {
-            throw ExceptionResponse::instance(__('auth::otp.already_registered'), 409)
-                ->setCustomCode(4091)
-                ->setCustomBody(['phone' => [__('auth::otp.already_registered')]]);
+            throw new PhoneAlreadyRegisteredException;
         }
 
         $user = User::query()->create([

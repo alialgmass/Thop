@@ -51,4 +51,33 @@ return [
             'removed' => 'Banner removed.',
         ],
     ],
+
+    'supplier_onboarding' => [
+        'label' => 'Onboarded supplier',
+        'plural' => 'Assisted onboarding',
+        'onboard' => 'Onboard supplier',
+        'steps' => [
+            'account' => 'Account',
+            'business' => 'Business profile',
+        ],
+        'fields' => [
+            'phone' => 'Phone',
+            'account_type' => 'Account type',
+            'email' => 'Email address',
+            'language' => 'Language',
+            'password' => 'Password',
+            'password_confirmation' => 'Confirm password',
+            'company_name' => 'Company name',
+            'activity' => 'Activity',
+            'governorate' => 'Governorate',
+            'address' => 'Address',
+            'contact_person' => 'Contact person',
+            'verification_status' => 'Verification status',
+        ],
+        'account_types' => [
+            'importer' => 'Importer',
+            'wholesaler' => 'Wholesaler',
+            'retailer' => 'Retailer',
+        ],
+    ],
 ];

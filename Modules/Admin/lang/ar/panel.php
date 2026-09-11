@@ -51,4 +51,33 @@ return [
             'removed' => 'تمت إزالة البانر.',
         ],
     ],
+
+    'supplier_onboarding' => [
+        'label' => 'مورد تم تسجيله',
+        'plural' => 'التسجيل بمساعدة الأدمن',
+        'onboard' => 'تسجيل مورد',
+        'steps' => [
+            'account' => 'الحساب',
+            'business' => 'الملف التجاري',
+        ],
+        'fields' => [
+            'phone' => 'رقم الهاتف',
+            'account_type' => 'نوع الحساب',
+            'email' => 'البريد الإلكتروني',
+            'language' => 'اللغة',
+            'password' => 'كلمة المرور',
+            'password_confirmation' => 'تأكيد كلمة المرور',
+            'company_name' => 'اسم الشركة',
+            'activity' => 'النشاط',
+            'governorate' => 'المحافظة',
+            'address' => 'العنوان',
+            'contact_person' => 'مسؤول التواصل',
+            'verification_status' => 'حالة التوثيق',
+        ],
+        'account_types' => [
+            'importer' => 'مستورد',
+            'wholesaler' => 'تاجر جملة',
+            'retailer' => 'تاجر تجزئة',
+        ],
+    ],
 ];

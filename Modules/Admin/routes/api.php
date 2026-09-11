@@ -2,6 +2,7 @@
 
 use Illuminate\Support\Facades\Route;
 use Modules\Admin\Http\Controllers\AdminAccountController;
+use Modules\Admin\Http\Controllers\AdminBusinessOnboardingController;
 use Modules\Admin\Http\Controllers\AuditLogController;
 use Modules\Admin\Http\Controllers\BannerController;
 use Modules\Admin\Http\Controllers\LiquidityDashboardController;
@@ -31,4 +32,6 @@ Route::middleware(['auth:sanctum', 'admin'])
             Route::post('{account}/suspend', [AdminAccountController::class, 'suspend'])->name('suspend');
             Route::post('{account}/reactivate', [AdminAccountController::class, 'reactivate'])->name('reactivate');
         });
+
+        Route::post('businesses', [AdminBusinessOnboardingController::class, 'store'])->name('businesses.store');
     });
