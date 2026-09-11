@@ -1529,6 +1529,84 @@
             },
             "description": "US-SEL-11, BR-ADM-01 - admin. -> rejected + reason. Audit product.rejected."
           }
+        },
+        {
+          "name": "Admin - request edits on product",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token_admin}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/admin/products/{{product_id}}/request-edits",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "admin",
+                "products",
+                "{{product_id}}",
+                "request-edits"
+              ]
+            },
+            "description": "US-SEL-11, BR-ADM-01 (Phase 9 T2) - admin. pending_review -> draft (not rejected), so the seller can revise and resubmit. Audit product.edits_requested.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"reason\": \"Please add MOQ and at least one more image before resubmitting.\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Admin - hide product",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token_admin}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/admin/products/{{product_id}}/hide",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "admin",
+                "products",
+                "{{product_id}}",
+                "hide"
+              ]
+            },
+            "description": "US-SEL-11, BR-ADM-01 (Phase 9 T2) - admin. published -> hidden. Audit product.hidden."
+          }
         }
       ]
     },
@@ -2306,7 +2384,7 @@
               "mode": "raw",
               "raw": "{\n  \"reason\": \"Abusive language in the message thread.\"\n}"
             },
-            "description": "US-INQ-09 · `auth:sanctum`, either party to the inquiry (else 403) · Durable record only — no moderation workflow / admin queue yet (Phase 9). **HTTP 201**."
+            "description": "US-INQ-09 · `auth:sanctum`, either party to the inquiry (else 403) · Durable record; admin resolves it via the Phase 9 dispute queue (see \"Phase 9 — Admin Dashboard\" folder). **HTTP 201**."
           },
           "response": []
         }
@@ -2454,6 +2532,691 @@
             "description": "Unit-of-measure terms."
           },
           "response": []
+        }
+      ]
+    },
+    {
+      "name": "Phase 9 — Admin Dashboard",
+      "item": [
+        {
+          "name": "Admin - audit log",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token_admin}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/admin/audit-logs",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "admin",
+                "audit-logs"
+              ]
+            },
+            "description": "US-ADM-09 - admin. Read-only, filterable by actor_id/action/auditable_type/auditable_id."
+          }
+        },
+        {
+          "name": "Admin - liquidity dashboard",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token_admin}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/admin/dashboard/liquidity",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "admin",
+                "dashboard",
+                "liquidity"
+              ]
+            },
+            "description": "US-ADM-06 - admin. active_sellers/active_products are current-state; active_buyers/inquiries_last_period/zero_result_terms windowed by ?range= (default 7)."
+          }
+        },
+        {
+          "name": "Admin - list taxonomy terms",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token_admin}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/admin/taxonomy/{{taxonomy_type}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "admin",
+                "taxonomy",
+                "{{taxonomy_type}}"
+              ]
+            },
+            "description": "US-ADM-03 (Phase 9 T3) - admin. {{taxonomy_type}} in fabric-types|materials|colors|units. Includes inactive terms."
+          }
+        },
+        {
+          "name": "Admin - create taxonomy term",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token_admin}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/admin/taxonomy/{{taxonomy_type}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "admin",
+                "taxonomy",
+                "{{taxonomy_type}}"
+              ]
+            },
+            "description": "US-ADM-03 (Phase 9 T3) - admin. name_ar/name_en required; hex only takes effect for colors. Audit taxonomy.created.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name_ar\": \"\\u062f\\u0646\\u064a\\u0645\",\n  \"name_en\": \"Denim\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Admin - update/deactivate taxonomy term",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token_admin}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/admin/taxonomy/{{taxonomy_type}}/{{taxonomy_term_id}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "admin",
+                "taxonomy",
+                "{{taxonomy_type}}",
+                "{{taxonomy_term_id}}"
+              ]
+            },
+            "description": "US-ADM-03 (Phase 9 T3) - admin. is_active true->false is audited as taxonomy.deactivated; any other change is taxonomy.updated. Takes effect immediately, no deploy.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"is_active\": false\n}"
+            }
+          }
+        },
+        {
+          "name": "Admin - list subscription plans",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token_admin}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/admin/subscription-plans",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "admin",
+                "subscription-plans"
+              ]
+            },
+            "description": "US-ADM-04 (Phase 9 T4) - admin. All plans including inactive, with entitlements."
+          }
+        },
+        {
+          "name": "Admin - create subscription plan",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token_admin}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/admin/subscription-plans",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "admin",
+                "subscription-plans"
+              ]
+            },
+            "description": "US-ADM-04 (Phase 9 T4) - admin. Audit plan.created.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"account_type\": \"importer\",\n  \"name\": \"Pro\",\n  \"price\": 499.99,\n  \"trial_days\": 14,\n  \"entitlements\": [\n    {\n      \"key\": \"product_limit\",\n      \"value\": \"50\"\n    }\n  ]\n}"
+            }
+          }
+        },
+        {
+          "name": "Admin - update subscription plan",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token_admin}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/admin/subscription-plans/{{plan_id}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "admin",
+                "subscription-plans",
+                "{{plan_id}}"
+              ]
+            },
+            "description": "US-ADM-04 (Phase 9 T4) - admin. Never touches any existing subscriber's entitlements (non-retroactive, US-SUB-05). Audit plan.updated.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"price\": 599.99\n}"
+            }
+          }
+        },
+        {
+          "name": "Admin - apply plan to existing subscriptions",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token_admin}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/admin/subscription-plans/{{plan_id}}/apply-to-existing",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "admin",
+                "subscription-plans",
+                "{{plan_id}}",
+                "apply-to-existing"
+              ]
+            },
+            "description": "US-ADM-04 (Phase 9 T4) - admin. Destructive: rewrites every currently-active subscriber's entitlement snapshot on this plan right now. confirm must be true or nothing happens. Audit plan.applied_to_existing.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"confirm\": true\n}"
+            }
+          }
+        },
+        {
+          "name": "Admin - list featured placements",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token_admin}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/admin/featured",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "admin",
+                "featured"
+              ]
+            },
+            "description": "US-ADM-05 (Phase 9 T5) - admin. All placements including expired."
+          }
+        },
+        {
+          "name": "Admin - create featured placement",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token_admin}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/admin/featured",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "admin",
+                "featured"
+              ]
+            },
+            "description": "US-ADM-05 (Phase 9 T5) - admin. type in product|supplier. starts_at/ends_at optional (null = immediately / no end). Same (type, featurable_id, slot) twice -> 409. Audit featured.placed.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"type\": \"product\",\n  \"featurable_id\": \"{{product_id}}\",\n  \"slot\": \"homepage_top\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Admin - remove featured placement",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token_admin}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/admin/featured/{{featured_placement_id}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "admin",
+                "featured",
+                "{{featured_placement_id}}"
+              ]
+            },
+            "description": "US-ADM-05 (Phase 9 T5) - admin. Hard delete. Audit featured.removed."
+          }
+        },
+        {
+          "name": "Banners (public, no auth)",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token_admin}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/banners",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "banners"
+              ]
+            },
+            "description": "US-ADM-05 (Phase 9 T6) - public, no token. Currently-active banners (is_active AND within window) ordered by position, for the separate marketplace client's homepage. Management is Filament-only, no admin REST surface (this ticket's own acceptance criteria ask for exactly that)."
+          }
+        },
+        {
+          "name": "Admin - suspend account",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token_admin}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/admin/accounts/{{suspend_account_id}}/suspend",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "admin",
+                "accounts",
+                "{{suspend_account_id}}",
+                "suspend"
+              ]
+            },
+            "description": "US-ADM-07 (Phase 9 T8) - admin. Destructive: status -> suspended + every Sanctum token revoked immediately. confirm must be true. Target must not be an admin (403). Audit account.suspended.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"confirm\": true\n}"
+            }
+          }
+        },
+        {
+          "name": "Admin - reactivate account",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token_admin}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/admin/accounts/{{suspend_account_id}}/reactivate",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "admin",
+                "accounts",
+                "{{suspend_account_id}}",
+                "reactivate"
+              ]
+            },
+            "description": "US-ADM-07 (Phase 9 T8) - admin. status -> active. No token restore. Audit account.reactivated."
+          }
+        },
+        {
+          "name": "Admin - list reports",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token_admin}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/admin/reports",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "admin",
+                "reports"
+              ]
+            },
+            "description": "US-ADM-08 (Phase 9 T9) - admin. Dispute queue, open-first, ?status= filter. Each row resolves both parties (buyer + seller business) whether the report targets an inquiry or a chat message."
+          }
+        },
+        {
+          "name": "Admin - resolve report",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token_admin}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/admin/reports/{{report_id}}/resolve",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "admin",
+                "reports",
+                "{{report_id}}",
+                "resolve"
+              ]
+            },
+            "description": "US-ADM-08 (Phase 9 T9) - admin. note required. status in resolved|dismissed (default resolved). Already-resolved -> 409. Audit report.resolved.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"note\": \"Investigated - no policy violation found.\",\n  \"status\": \"resolved\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Admin - onboard supplier",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token_admin}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/admin/businesses",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "admin",
+                "businesses"
+              ]
+            },
+            "description": "US-ADM-10 (Phase 9 T10) - admin. One atomic flow: creates the user (active immediately, no OTP) + business account, onboarded_by_admin=true. Duplicate phone -> 409 (same rule as public registration). Audit supplier.onboarded.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"phone\": \"01099998888\",\n  \"account_type\": \"importer\",\n  \"password\": \"Password123!\",\n  \"password_confirmation\": \"Password123!\",\n  \"company_name\": \"Nile Textiles\",\n  \"activity\": \"Fabric import\",\n  \"governorate_id\": \"{{governorate_id}}\",\n  \"address\": \"123 Industrial Zone\",\n  \"contact_person\": \"Mona Ali\"\n}"
+            }
+          }
         }
       ]
     }

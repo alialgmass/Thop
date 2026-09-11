@@ -10,11 +10,14 @@ Hand-maintained. One document per **completed** phase:
 | [phase-4-search.md](phase-4-search.md) | 4 | Product & supplier search, filters, sort, featured, zero-result log |
 | [phase-5-favorites-comparison.md](phase-5-favorites-comparison.md) | 5 | Favorites, comparison |
 | [phase-6-inquiries.md](phase-6-inquiries.md) | 6 | Inquiry, RFQ, quotation, leads, reporting |
+| [phase-9-admin-dashboard.md](phase-9-admin-dashboard.md) | 9 | Verification/product review, taxonomy, plans, featured/banners, liquidity dashboard, suspend/reactivate, reports, onboarding, audit-completeness |
 
 Phase 3 (Catalog): **3.1 products + 3.2 media are built and tested** (`Modules/Catalog` —
 `ProductTest` 11, `ProductMediaTest` 10; endpoints in `docs/API_REFERENCE.md` §4). A
 dedicated phase-3 QA doc is a follow-up; **3.3 bulk import (#16)** is not built.
-Phases 7–10 are not started.
+Phases 7 (Chat) and 8 (Notifications) are built and tested but still lack a dedicated QA doc
+(see `docs/PHASE_STATUS.md` "Phase 7/8 deferrals") — a pre-existing gap, not addressed here.
+Phase 10 (R1 Hardening) is spec'd (#41–#50) but not started.
 
 ---
 
@@ -67,8 +70,16 @@ Each phase doc has the same five sections:
 | US-ACC-04 | Upload verification documents | 1 | 🟡 | VerificationUploadTest (12) — **real AV scan / real S3 = manual** |
 | US-ACC-05 | Verified badge display | 1 | ✅ | BusinessProfileTest `the_verified_flag_tracks…`; AdminVerificationReviewTest `the_verified_badge_shows_after_approval` |
 | US-ADM-01 | Verification review approve/reject + reason | 1 | ✅ | AdminVerificationReviewTest (9), Filament/VerificationRequestPanelTest (6) |
-| US-ADM-09 | Immutable audit log | 1 | ✅ | AuditLogTest (5), AdminVerificationReviewTest (audit rows) |
-| BR-ADM-01 | Every admin action audited | 1 | 🟡 | Covered for verification approve/reject; **other admin actions are Phase 9** |
+| US-ADM-02 | Product review approve/reject/request-edits/hide | 9 | 🟡 | AdminProductReviewTest (11), Filament/ProductReviewPanelTest (8); **`request-edits` doesn't yet notify the seller** — see phase-9 doc §3 |
+| US-ADM-03 | Taxonomy management, immediate effect, no deploy | 9 | ✅ | AdminTaxonomyTest (13), Filament/TaxonomyPanelTest (6) |
+| US-ADM-04 | Plan management, non-retroactive edits, forced apply | 9 | ✅ | AdminSubscriptionPlanTest (6), Filament/SubscriptionPlanPanelTest (8) — required building the entitlement-snapshot mechanism (see `docs/PROGRESS.md` T4) |
+| US-ADM-05 | Featured suppliers/products/banners curation | 9 | ✅ | AdminFeaturedPlacementTest (10), Filament/FeaturedPlacementPanelTest (4); BannerTest (3), Filament/BannerPanelTest (9) |
+| US-ADM-06 | Liquidity dashboard | 9 | ✅ | LiquidityDashboardTest (9), Filament/LiquidityStatsWidgetTest (2) |
+| US-ADM-07 | Suspend/ban account, destructive, confirmed | 9 | ✅ | AdminAccountModerationTest (8), Filament/UserModerationPanelTest (4) |
+| US-ADM-08 | Report/dispute ticket queue | 9 | ✅ | AdminReportTest (10), Filament/ReportPanelTest (6) |
+| US-ADM-09 | Immutable audit log | 1/9 | ✅ | AuditLogTest (5); every admin write path across all phases — see phase-9 doc §5 |
+| US-ADM-10 | Assisted supplier onboarding | 9 | ✅ | AdminBusinessOnboardingTest (7), Filament/SupplierOnboardingPanelTest (4) |
+| BR-ADM-01 | Every admin action audited | 1/9 | ✅ | All 21 `AuditAction` cases have a passing audit-row assertion — see phase-9 doc §5 (T11 sweep) |
 | SEC-NFR-05 | Uploaded files type/size validated, scanned | 1 | ✅ | type/size ✅; **`FileScanner` seam + `SignatureFileScanner` (EICAR) default** — `VerificationUploadTest` covers rejected-infected + config-disabled. Real ClamAV = deploy config. |
 | SEC-NFR-01 | No tokens/credentials in URLs | 1 | 🟡 | signed doc URL uses `signature`/`expires` query params only; **full TLS review = manual/infra** |
 | US-SUB-01/02 | Plan catalog per account type | 2 | ✅ | SubscriptionPlanTest (4) |
@@ -101,7 +112,7 @@ Each phase doc has the same five sections:
 | US-INQ-05 | Seller contact info visibility per plan | 6 | ✅ | **ContactVisibilityTest (4)** — `contact_info_visible` entitlement (default off) gates `contact_channels` for buyers |
 | US-INQ-06/07 | Lead logging & status | 6 | ✅ | InquiryTest `a_new_inquiry_is_a_lead_in_new_status`, `the_seller_moves_a_lead_through_every_status` |
 | US-INQ-08 | Plan limits on inquiries | 6 | ✅ | InquiryTest `sending_to_a_seller_past_their_inquiry_limit…`; RfqQuotationTest `an_rfq_is_rejected_when_the_seller_is_past…` |
-| US-INQ-09 | Spam rate-limit + reporting | 6 | 🟡 | InquiryTest `inquiry_creation_is_rate_limited`, ReportTest (5); **content heuristics not implemented; report → admin ticket is Phase 9** |
+| US-INQ-09 | Spam rate-limit + reporting | 6/9 | 🟡 | InquiryTest `inquiry_creation_is_rate_limited`, ReportTest (5), AdminReportTest (Phase 9 · T9 — resolve queue); **content heuristics not implemented** |
 | US-ANL-03 | Lead management screen | 6 | ✅ | InquiryTest — own-leads scoping, status filter, **`raising_an_rfq_advances_the_leads_last_activity`** (`last_activity_at` added; spec §11 corrected to `GET /inquiries?role=seller`) |
 | BR-INQ-01 | Every inquiry = one Lead | 6 | ✅ | InquiryTest `a_new_inquiry_is_a_lead_in_new_status` |
 | BR-INQ-02 | Inquiry/RFQ volume limits per plan | 6 | ✅ | as US-INQ-08 |
@@ -118,7 +129,7 @@ Each phase doc has the same five sections:
 | ~~Seller contact-info visibility gate~~ | ~~US-INQ-05~~ | **DONE** — `contact_info_visible` entitlement | — |
 | Recurring subscription billing | US-SUB-06 | **not implemented** — R4 | R4 |
 | In-app chat | US-INQ-04 | **not started** — Phase 7 | Phase 7 |
-| Report → admin ticket / dispute queue | US-INQ-09 (2nd half), US-ADM-08 | **not implemented** — Phase 9 | Phase 9 |
+| ~~Report → admin ticket / dispute queue~~ | ~~US-INQ-09 (2nd half), US-ADM-08~~ | **DONE** — `AdminReportController`/`ReportResource` (Phase 9 · T9) | — |
 | Content-based spam heuristics | US-INQ-09 | **not implemented** (rate-limit only) | Backlog |
 | ~~"Last activity" on the leads screen~~ | ~~US-ANL-03~~ | **DONE** — `last_activity_at` per lead (message activity folds in with Chat) | — |
 | Billing history / invoices | US-SUB-04 | **not implemented** — with Payments | R4 |

@@ -1,7 +1,9 @@
 # THOB Postman Collection
 
 Hand-maintained, seeded from the live route inventory + FormRequest/Resource source
-(2026-09-07). Covers **phases 0, 1, 2, 3 (products + media + CSV import), 4, 5, 6** — 60 requests in 8 folders.
+(2026-09-11). Covers **phases 0, 1, 2, 3 (products + media + CSV import), 4, 5, 6, 9
+(admin dashboard)** — 80 requests in 9 folders. Phases 7 (Chat) and 8 (Notifications) are
+built and tested but not yet added here (`docs/PHASE_STATUS.md` "Phase 7/8 deferrals").
 
 | File | What it is |
 |---|---|

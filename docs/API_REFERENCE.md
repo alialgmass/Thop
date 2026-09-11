@@ -38,6 +38,12 @@ Every `/api/v1/` response (success and most errors) is:
 | 4040 | 404 | false | resource not found (route-model-binding miss / `abort(404)`) — **enveloped for every module** | Core `Handler`; also `POST /favorites` target-missing |
 | 4091 | 409 | false | phone already registered / already has active subscription | OTP request, Register, Subscribe |
 | 4092 | 409 | false | account type already set / verification request not pending | account-type, verification approve-reject |
+| 4093 | 409 | false | product not awaiting review (approve/reject/hide/request-edits on the wrong state) | Admin product review |
+| 4094 | 409 | false | item already featured in that slot | Admin featured placement create |
+| 4095 | 409 | false | account already suspended | Admin account suspend |
+| 4096 | 409 | false | account not suspended (reactivate on a non-suspended account) | Admin account reactivate |
+| 4097 | 409 | false | report already resolved/dismissed | Admin report resolve |
+| 4032 | 403 | false | policy restriction, not a state conflict (e.g. target account is an admin) | Admin account suspend |
 | 4221 | 422 | false | invalid OTP (no active request / expired / locked / mismatch) **or** subscription not active on update | OTP verify, subscription update |
 | 4222 | 422 | false | login failed (bad phone or password) / plan ↔ account-type mismatch | Login, Subscribe |
 | 4224 | 422 | false | invalid onboarding handoff token | Register, Password reset |
@@ -543,5 +549,43 @@ Categories: `verification`, `product_review`, `inquiry`, `rfq`, `quotation`, `me
 New scheduled command: `subscriptions:notify-expiring` (daily) fires `SubscriptionExpiring`
 once per period for subscriptions ending within `SUBSCRIPTION_EXPIRING_REMINDER_DAYS`.
 
-Out of scope (later phases): rest of Admin (9), Orders/Payments/Shipping (R2–R4);
-`market_alert_match` and real push/SMS providers deferred (see `docs/PHASE_STATUS.md`).
+Out of scope (later phases): Orders/Payments/Shipping (R2–R4); `market_alert_match` and real
+push/SMS providers deferred (see `docs/PHASE_STATUS.md`).
+
+---
+
+## Admin (Phase 9, #29) — `auth:sanctum` + `admin` role, unless noted
+
+Every route below is additionally gated by the `admin` route middleware
+(`Modules\Core\Http\Middleware\EnsureUserIsAdmin`) — the same gate the Filament panel
+enforces, so REST and Filament share one authorization source per resource. Every
+create/edit/decide/remove action here writes exactly one `audit_logs` row (`AuditLog::record()`,
+append-only — update/delete throw at the model layer); the action column below names it.
+
+| Method | Path | Notes | Audit action |
+|---|---|---|---|
+| GET | `/admin/audit-logs` | Read-only viewer, filterable by `actor_id`/`action`/`auditable_type`/`auditable_id`. Paginated. | — |
+| GET | `/admin/dashboard/liquidity` | Marketplace-health snapshot: `active_sellers`/`active_products` (current-state), `active_buyers`/`inquiries_last_period`/`zero_result_terms` (windowed by `?range=`, default 7 days). Flat `body`. | — |
+| GET | `/admin/products` | Pending-review queue, paginated, newest-first. | — |
+| POST | `/admin/products/{product}/approve` | Guard: product must be `pending_review` (else `409/4093`) and have ≥1 image (else `422`). → `published`. | `product.approved` |
+| POST | `/admin/products/{product}/reject` | Body `reason` (required, 3–1000 chars). Guard `409/4093`. → `rejected`. | `product.rejected` |
+| POST | `/admin/products/{product}/request-edits` | Body `reason` (required, 3–1000 chars). Guard `409/4093`. → `draft` (not `rejected`) so the seller can revise and resubmit. | `product.edits_requested` |
+| POST | `/admin/products/{product}/hide` | Guard: product must be `published` (else `409/4093`). → `hidden`. | `product.hidden` |
+| GET | `/admin/taxonomy/{type}` | `{type}` ∈ `fabric-types\|materials\|colors\|units` (backed-enum route binding — unknown type → 404). All terms including inactive. | — |
+| POST | `/admin/taxonomy/{type}` | Body `name_ar`, `name_en` (both required), `hex` (colors only, silently ignored elsewhere). Slug auto-derived from `name_en`, de-duplicated. | `taxonomy.created` |
+| PATCH | `/admin/taxonomy/{type}/{term}` | Body: any of `name_ar`/`name_en`/`is_active`/`hex`, all `sometimes`. `is_active` transitioning `true→false` is a **deactivation**, everything else is a plain **update** — distinct audit actions. Deactivated terms drop from the public taxonomy read endpoints and product-creation validation immediately (existing `is_active` scoping — no new mechanism). | `taxonomy.updated` or `taxonomy.deactivated` |
+| GET | `/admin/subscription-plans` | All plans (including inactive), with entitlements. | — |
+| POST | `/admin/subscription-plans` | Body: `account_type`, `name`, `price`, `billing_cycle`, `trial_days`, `is_active`, `entitlements:[{key,value}]` (all per `StoreSubscriptionPlanRequest`). | `plan.created` |
+| PATCH | `/admin/subscription-plans/{plan}` | Same fields, all `sometimes`. **Never** touches any existing subscriber's entitlements (US-SUB-05 non-retroactive) — see `apply-to-existing` below. | `plan.updated` |
+| POST | `/admin/subscription-plans/{plan}/apply-to-existing` | Body `confirm` (required, must be `true` — else nothing happens). Re-copies the plan's *current* entitlements onto every currently-active subscription on it. → `body.subscriptions_updated`. | `plan.applied_to_existing` |
+| GET | `/admin/featured` | All placements (active + expired), newest-first. | — |
+| POST | `/admin/featured` | Body `type` (`product\|supplier`), `featurable_id`, `slot`, `starts_at`/`ends_at` (nullable). Target must exist (else 404). Same `(type, featurable_id, slot)` twice → `409/4094`. | `featured.placed` |
+| DELETE | `/admin/featured/{placement}` | Hard delete + audit (audit row written before the delete, since a deleted row can't be read back). | `featured.removed` |
+| GET | `/banners` | **Public, no auth.** Currently-active banners (`is_active` AND within `starts_at`/`ends_at`) ordered by `position`. For the separate marketplace client's homepage — this repo has none. Management is Filament-only (no admin REST surface for banners). | — |
+| POST | `/admin/accounts/{account}/suspend` | Body `confirm` (required `true`). Guards: not already suspended (`409/4095`), target not an admin (`403/4032`). → status `suspended` + **every Sanctum token revoked** (next request with an old token → 401, no new middleware needed). Fires `AccountSuspended` (not yet wired to a notification). | `account.suspended` |
+| POST | `/admin/accounts/{account}/reactivate` | No `confirm` needed. Guard: must currently be suspended (else `409/4096`). → status `active`. No token restore. | `account.reactivated` |
+| GET | `/admin/reports` | Dispute/report queue, `?status=` filter, open-first ordering, paginated. Each row resolves both parties (buyer + seller business) whether the report is against an inquiry or a chat message. | — |
+| POST | `/admin/reports/{report}/resolve` | Body `note` (required, 3–2000 chars), `status` (`resolved\|dismissed`, default `resolved`). Guard: not already resolved/dismissed (`409/4097`). | `report.resolved` |
+| POST | `/admin/businesses` | Assisted supplier onboarding — one atomic transaction. Body: `phone` (same `EgyptianMobile` rule as public registration), `account_type` (`importer\|wholesaler\|retailer`), `password`+`password_confirmation`, `email`, `language`, plus the business-profile fields (`company_name`, `activity`, `governorate_id`, `address`, `contact_person`). Duplicate phone → `409/4091` (same exception public registration throws). Resulting account: `active` immediately, `onboarded_by_admin = true`, otherwise indistinguishable from self-registration (no subscription granted — same as self-registration). Filament wizard parity, same action underneath. | `supplier.onboarded` |
+
+Out of scope for Phase 9 (later phases): Orders/Payments/Shipping admin (R2–R4).

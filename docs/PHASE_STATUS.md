@@ -1,6 +1,6 @@
 # THOB — Phase & Endpoint Status
 
-Last updated: **2026-09-07**. Companion to `docs/PROGRESS.md` (narrative) — this file is the
+Last updated: **2026-09-11**. Companion to `docs/PROGRESS.md` (narrative) — this file is the
 at-a-glance grid. Verification columns are deliberately conservative: **passing automated
 tests ≠ VERIFIED**.
 
@@ -39,13 +39,20 @@ product decision #26.
 | 6 | Inquiries / RFQ / Quotation / Reporting | ✅ | ✅ 36 | — | ✅ | ✅ | DOCUMENTED |
 | 7 | Chat (Pusher) | ✅ (#27) | ✅ 21 | — | ⬜ | 🟡 (API_REFERENCE §Chat) | **PARTIAL** — postman + QA plan pending |
 | 8 | Notifications | ✅ (#28) | ✅ 21 | — | ⬜ | 🟡 (API_REFERENCE §Notifications) | **PARTIAL** — postman + QA traceability (US-NOT-24) pending |
-| 9 | Admin dashboard (rest of) | 🟡 verification + subscriptions panels only | 🟡 12 Filament tests | — | n/a (Filament) | ⬜ | PENDING |
+| 9 | Admin dashboard — taxonomy, plans, featured, banners, liquidity, suspend/reactivate, reports, onboarding, audit-completeness | ✅ (#30–#40) | ✅ 118 (T1–T11 combined) | — | ✅ | ✅ | DOCUMENTED |
 | 10 | R1 hardening (authz suite / load / security) | ⬜ | ⬜ | — | ⬜ | ⬜ | PENDING |
 
-**Full suite: 378 automated tests, 378 passing, 0 failing, 0 skipped**
-(`php artisan test`, SQLite `:memory:`, 2026-09-07). Timeline: 294 baseline → 296 (D6/D7)
+**Full suite: 507 automated tests, 507 passing, 0 failing, 0 skipped**
+(`php artisan test`, SQLite `:memory:`, 2026-09-11). Timeline: 294 baseline → 296 (D6/D7)
 → 315 (gap-closure) → 326 (#15 Phase 3.2 media) → 328 (#21 SEC-NFR-05 malware scan seam)
-→ 338 (#16 Phase 3.3 CSV bulk import) → 357 (#27 Phase 7 Chat) → 376 (#28 Phase 8 Notifications) → **378** (Phase 7/8 code-review fixes).
+→ 338 (#16 Phase 3.3 CSV bulk import) → 357 (#27 Phase 7 Chat) → 376 (#28 Phase 8 Notifications)
+→ 378 (Phase 7/8 code-review fixes) → 389 (#30 Phase 9 T1 admin gate + audit-log viewer)
+→ 411 (#31 T2 product review) → 430 (#32 T3 taxonomy) → 438 (#33 T4 plan management +
+entitlement-snapshot architecture fix) → 452 (#34 T5 featured placements) → 462 (#35 T6
+banners) → 471 (#36 T7 liquidity dashboard) → 483 (#37 T8 suspend/reactivate) → 498 (#38
+T9 reports queue) → **507** (#39 T10 assisted onboarding). #40 (T11) added no new
+production code — audit-completeness was already fully covered by every prior ticket's own
+tests (verified, not re-tested) — and closes out this doc set.
 
 ### Phase 7 / 8 deferrals (documented, not gaps in the phase scope)
 
@@ -56,6 +63,13 @@ product decision #26.
 - **Order / payment / shipment matrix rows** — R2 / R4.
 - **Sub-user notification routing (ACC-FR-08)** — R2; owner-only recipients in R1.
 - **US-NOT-24 traceability doc** — `docs/qa/phase-7-*.md` / `phase-8-*.md` + postman folders not yet written (follow-up, same as Phases 3.2/3.3 which also lag their postman/QA docs).
+
+### Phase 9 deferrals (documented, not gaps in the phase scope)
+
+- **`units` taxonomy management has no consumer** (#32 / T3) — `products.unit` is a hardcoded DB enum (`per_meter`/`per_kg`), never wired to the `units` taxonomy table T3 built CRUD for. A user-approved decision: build the CRUD as-is, flag the disconnect, defer the schema migration to wire `Product.unit` to a real `unit_id` FK (out of this phase's scope).
+- **`AccountSuspended` event not wired to a notification** (#37 / T8) — dispatched on suspend, but no listener/Notification class exists yet, and no Notification Matrix row (§14) covers "account suspended". Follow-up once a matrix row is decided.
+- **Phase 9 T1's Filament panel i18n/UX pass** (nav groups, ar/en, `filament-language-switch`) shipped inside #30 but the theme rebuild is blocked on the pre-existing broken legacy `resources/js` Vite build (ADR-0001 removal debt) — switcher works, styling incomplete until that cleanup lands.
+- **No REST admin surface for banners** (#35 / T6) — the ticket explicitly asks for Filament CRUD + one public read endpoint only, unlike every other Phase 9 ticket's "Filament + REST parity" wording; an initial pass built a parallel REST CRUD anyway and it was removed as scope creep during code review.
 
 ---
 
@@ -125,6 +139,18 @@ product decision #26.
 | `POST /notifications/{id}/read` · `/read-all` | ✅ | ✅ | — | ⬜ | ✅ | TESTED |
 | `GET\|PUT /notification-preferences` | ✅ | ✅ | — | ⬜ | ✅ | TESTED |
 | `PUT /notification-preferences/marketing` | ✅ | ✅ | — | ⬜ | ✅ | TESTED |
+| **Phase 9 — Admin** | | | | | | |
+| `GET /admin/audit-logs` | ✅ (#30) | ✅ | — | ✅ | ✅ | DOCUMENTED |
+| `GET /admin/dashboard/liquidity` | ✅ (#36) | ✅ | — | ✅ | ✅ | DOCUMENTED |
+| `GET /admin/products` | ✅ (#31) | ✅ | — | ✅ | ✅ | DOCUMENTED |
+| `POST /admin/products/{id}/approve\|reject\|request-edits\|hide` | ✅ (#31) | ✅ | — | ✅ | ✅ | DOCUMENTED |
+| `GET\|POST /admin/taxonomy/{type}` · `PATCH /admin/taxonomy/{type}/{term}` | ✅ (#32) | ✅ | — | ✅ | ✅ | DOCUMENTED |
+| `GET\|POST /admin/subscription-plans` · `PATCH .../{id}` · `POST .../{id}/apply-to-existing` | ✅ (#33) | ✅ | — | ✅ | ✅ | DOCUMENTED |
+| `GET\|POST /admin/featured` · `DELETE /admin/featured/{id}` | ✅ (#34) | ✅ | — | ✅ | ✅ | DOCUMENTED |
+| `GET /banners` (public) | ✅ (#35) | ✅ | — | ✅ | ✅ | DOCUMENTED |
+| `POST /admin/accounts/{id}/suspend\|reactivate` | ✅ (#37) | ✅ | — | ✅ | ✅ | DOCUMENTED |
+| `GET /admin/reports` · `POST /admin/reports/{id}/resolve` | ✅ (#38) | ✅ | — | ✅ | ✅ | DOCUMENTED |
+| `POST /admin/businesses` | ✅ (#39) | ✅ | — | ✅ | ✅ | DOCUMENTED |
 
 ---
 
@@ -139,7 +165,13 @@ product decision #26.
    blocked on #15 + the gap-closure batch landing.
 3. **Follow-ups**: MySQL FULLTEXT CI lane + 100k load check (#24, D12); a real ClamAV/hosted
    adapter for the verification `FileScanner` seam (#21 shipped the seam + EICAR default);
-   product decision on unverified-supplier visibility (#26, Open Decision #5).
+   product decision on unverified-supplier visibility (#26, Open Decision #5); a
+   500-concurrent-user load test (NFR-PRF-04) still needs its own ticket filed (see #41).
+4. **Phase 10 — R1 Hardening** (#41, spec'd via `/to-spec` → tickets #42–#50, `ready-for-agent`)
+   is next: authorization-matrix suite per Policy, §15 security-checklist pass, one root-level
+   R1 end-to-end story test, gap report. Phase 9's own authorization-matrix coverage (§8
+   "Admin Functions" row) is scoped to what's built today only — Phase 9 T2–T10 (#31–#39, all
+   now shipped).
 
 ## Open spec / implementation discrepancies
 
