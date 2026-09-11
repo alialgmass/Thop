@@ -27,6 +27,13 @@ return [
             'language' => 'اللغة',
             'status' => 'الحالة',
         ],
+        'actions' => [
+            'suspend' => 'إيقاف',
+            'suspend_confirm' => 'أفهم أن هذا يوقف وصول هذا الحساب فورًا.',
+            'suspended' => 'تم إيقاف الحساب.',
+            'reactivate' => 'إعادة تفعيل',
+            'reactivated' => 'تمت إعادة تفعيل الحساب.',
+        ],
     ],
 
     'role' => [

@@ -1,6 +1,7 @@
 <?php
 
 use Illuminate\Support\Facades\Route;
+use Modules\Admin\Http\Controllers\AdminAccountController;
 use Modules\Admin\Http\Controllers\AuditLogController;
 use Modules\Admin\Http\Controllers\BannerController;
 use Modules\Admin\Http\Controllers\LiquidityDashboardController;
@@ -25,4 +26,9 @@ Route::middleware(['auth:sanctum', 'admin'])
         Route::get('audit-logs', [AuditLogController::class, 'index'])->name('audit-logs.index');
 
         Route::get('dashboard/liquidity', [LiquidityDashboardController::class, 'index'])->name('dashboard.liquidity');
+
+        Route::prefix('accounts')->name('accounts.')->group(function () {
+            Route::post('{account}/suspend', [AdminAccountController::class, 'suspend'])->name('suspend');
+            Route::post('{account}/reactivate', [AdminAccountController::class, 'reactivate'])->name('reactivate');
+        });
     });

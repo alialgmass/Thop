@@ -32,6 +32,13 @@ return [
             'language' => 'Language',
             'status' => 'Status',
         ],
+        'actions' => [
+            'suspend' => 'Suspend',
+            'suspend_confirm' => 'I understand this immediately revokes this account\'s access.',
+            'suspended' => 'Account suspended.',
+            'reactivate' => 'Reactivate',
+            'reactivated' => 'Account reactivated.',
+        ],
     ],
 
     'role' => [

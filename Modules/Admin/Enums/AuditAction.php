@@ -30,4 +30,7 @@ enum AuditAction: string
     case BannerCreated = 'banner.created';
     case BannerUpdated = 'banner.updated';
     case BannerRemoved = 'banner.removed';
+
+    case AccountSuspended = 'account.suspended';
+    case AccountReactivated = 'account.reactivated';
 }
